@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: simple-rollout
+spec:
+  replicas: 2
+  strategy:
+    blueGreen:     
+      activeService: bluegreen-active   
+      previewService: bluegreen-preview
+      # Rollouts can be resumed using: `kubectl argo rollouts promote ROLLOUT`      
+      autoPromotionEnabled: false
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+      - name: web
+        image: spinnakercd/argocd-blue-green:v1
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP

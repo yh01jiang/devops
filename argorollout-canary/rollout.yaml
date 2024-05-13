@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: simple-rollout
+spec:
+  replicas: 10
+  strategy:
+    canary:
+      canaryService: canary-service  # required
+      stableService: stable-service  # required
+      trafficRouting:
+        nginx:
+          # Either stableIngress or stableIngresses must be configured, but not both.
+          stableIngress: demo-stable-ingress
+      steps:
+      - setWeight: 30
+      - pause: {}
+      - setWeight: 60
+      - pause: {}
+      - setWeight: 100
+      - pause: {}     
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+      - name: web
+        image: spinnakercd/argocd-blue-green:v2
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP

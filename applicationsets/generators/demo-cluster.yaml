@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: multi-cluster-application-set
+  namespace: argocd
+spec:
+  generators:
+  - clusters: #{} #all clusters
+      selector:
+        matchLabels:
+          test: "true"
+      values:
+        name: "test"
+  template:      
+    metadata:
+      name: '{{name}}-app'  ## name == clusterName (cluster1, cluster2)
+    spec:
+      project: default
+      source:
+        path: guestbook
+        repoURL: https://jihulab.com/devops_course/argocd-example-apps.git
+        targetRevision: master
+      destination:
+        server: '{{server}}'   # cluster URL 
+        namespace: '{{name}}-demoapp'
+      # Sync policy
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true  
+        automated: # automated sync by default retries failed attempts 5 times with following delays between attempts ( 5s, 10s, 20s, 40s, 80s ); retry controlled using `retry` field.
+          prune: true # Specifies if resources should be pruned during auto-syncing ( false by default ).
+          selfHeal: true # Specifies if partial app sync should be executed when resources are changed only in target Kubernetes cluster and no git change detected ( false by default ).
+      

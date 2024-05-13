@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: demo1-application-set
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - namespace: dev
+      - namespace: test
+      - namespace: stg
+      - namespace: prod
+  template:      
+    metadata:
+      name: '{{namespace}}-app'
+    spec:
+      project: default
+      source:
+        path: guestbook
+        repoURL: https://jihulab.com/devops_course/argocd-example-apps.git
+        targetRevision: master
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'   # 动态值
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true  
+        automated: 
+          prune: true 

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rootapp
+  namespace: argocd
+spec:
+  project: myproject
+  source:
+    path: guestbook
+    repoURL: https://jihulab.com/devops_course/argocd-example-apps.git
+    targetRevision: master
+    path: ./multi-clusters/apps
+    directory:
+      recurse: false
+  destination:
+    server: https://172.21.0.3:6443
+    namespace: directory-guestbook
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

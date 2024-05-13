@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: many-apps-application-set
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: https://jihulab.com/devops_course/argocd-example-apps.git
+      revision: HEAD
+      directories:
+      - path: applicationsets/demoapps/*
+  template:      
+    metadata:
+      name: '{{path.basename}}'   ## 目录名称（demo1,demo2,demo3）
+    spec:
+      project: default
+      source:
+        repoURL: https://jihulab.com/devops_course/argocd-example-apps.git
+        targetRevision: HEAD
+        path: '{{path}}'     ## 完整的路径  applicationsets/demoapps/demo1
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'    ## 目录名称
+      # Sync policy
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true  
+        automated:
+          prune: true 

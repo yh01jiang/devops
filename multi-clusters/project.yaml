@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: myproject
+  namespace: argocd
+spec:
+  description: Example Project
+  sourceRepos:
+  - 'https://jihulab.com/devops_course/argocd-example-apps.git'
+  destinations:
+  - namespace: argocd  ## allow create Application (app-of-apps)
+    server: https://172.21.0.3:6443
+  - namespace: directory-guestbook
+    server: https://172.21.0.3:6443
+  - namespace: directory-guestbook
+    server: https://172.21.0.6:6443
+  # Deny all cluster-scoped resources from being created, except for Namespace
+  clusterResourceWhitelist:
+  - group: ''
+    kind: Namespace
+
+  # Allow all namespaced-scoped resources to be created, except for ResourceQuota, LimitRange, NetworkPolicy
+  namespaceResourceBlacklist:
+  - group: ''
+    kind: ResourceQuota
+  - group: ''
+    kind: LimitRange
+  - group: ''
+    kind: NetworkPolicy
+
+  # Deny all namespaced-scoped resources from being created, except for Deployment and StatefulSet
+  namespaceResourceWhitelist:
+  - group: 'apps'
+    kind: Deployment
+  - group: 'apps'
+    kind: StatefulSet
+  - group: '*'
+    kind: Service
+  - group: 'argoproj.io'   ## allow create Application (app-of-apps)
+    kind: Application
