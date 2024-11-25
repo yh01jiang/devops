@@ -1,0 +1,17 @@
+{
+    "name": "John Doe",
+    "age": 30,
+    "is_employee": true,
+    "addresses": [
+      {
+        "type": "home",
+        "city": "New York",
+        "country": "USA"
+      },
+      {
+        "type": "work",
+        "city": "San Francisco",
+        "country": "USA"
+      }
+    ]
+  }

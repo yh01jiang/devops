@@ -1,0 +1,21 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    <p>if判断</p>
+    <p>{{ request.args.get("state")}}</p>
+    {# 单条件判断 #}
+    {% if request.args.get("state") == "200" %}
+        <p> state的值为200</p>
+    {% endif%}
+
+
+
+</body>
+</html>
+
+

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+        .table {
+            border: 1px solid red;
+            border-collapse: collapse;
+            width: 800px;
+
+        }
+        .table tr th, 
+        .table tr td {
+            border: 1px solid red;
+            text-align: center;
+        
+            
+        }
+    </style>
+</head>
+<body>
+    <table class="table">
+        <tr>
+            <th>序号</th>
+            <th>ID</th>
+            <th>标题</th>
+            <th>描述</th>
+        </tr>
+
+        {% for book in book_list | reverse %}
+        {% if loop.first %}
+            <tr bgcolor="aqua">
+        {% elif loop.last %}
+            <tr bgcolor="gfhaddeq">
+        {% else %}
+            <tr bgcolor="#faebg7">
+        {% endif %}
+            <td>
+                {{ loop.index }}
+                {{ loop.index0 }}
+                {{ loop.revindex }}
+                {{ loop.revindex0 }}
+                {{ loop.length }}
+            </td>
+            <td>{{ book.id }}</td>
+            <td>{{ book.title }}</td>
+            <td>{{ book.description }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br>
+    <table class="table">
+        <tr>
+            <th>ID</th>
+            <th>姓名</th>
+            <th>性别</th>
+        </tr>
+        {% for data in data_list %}
+            <tr>
+                <td>{{ data.id }}</td>
+                <td>{{ data.name }}</td>
+                <!-- <td>{{ data.sex }}</td> -->
+                <td>{{ loop.cycle("男", "女")}}, 原始值={{ data.sex }}</td>
+            </tr>
+        {% endfor %}
+
+    </table>
+    
+</body>
+</html>

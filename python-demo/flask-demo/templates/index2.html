@@ -1,0 +1,37 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    <p>if判断</p>
+    <p>{{ request.args.get("state")}}</p>
+    {# 单条件判断 #}
+    {% if request.args.get("state") == "200" %}
+        <p> state的值为200</p>
+    {% endif%}
+
+    <hr>
+    {# 双条件判断 #}
+    {% if request.args.get("num",0) | int % 2 == 0 %}
+        <p> num是偶数, 值为={{ request.args.get("num",0) }}</p>
+    {% else %}
+        <p> num为奇数, 值为={{ request.args.get("num",0) }}</p>
+    {% endif %}
+    <hr>
+
+    {# 多条件判断 #}
+    {% if score < 60 %}
+        <p>本次考试不及格，分数为{{ score }}</p>
+    {% elif score < 80 %}
+        <p>本次考试不够优秀，分数为{{ score }}</p>
+    {% elif score < 90 %}
+        <p>很棒下次加把劲，分数为{{ score }}</p>
+    {% else %}
+        <p>你tmd是学霸呀，分数为{{ score }}</p>
+    {% endif %}
+
+</body>
+</html>

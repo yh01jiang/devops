@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+</head>
+<body>
+    <p>
+        {# 模版注释 #}
+        基本类型<br>
+        num = {{ num }}<br>
+        {{ num2 }}<br>
+        {{ is_bool }}<br>
+        {{ title }}<br>
+    </p>
+
+    <p>
+        复合类型<br>
+        {{ set_var }}<br>
+        {{ set_var.pop() }}<br>
+        {{ list_var }}<br>
+        {{ list_var[0] }}<br>
+        {{ list_var[1] }}<br>
+        {{ list_var.1}}<br>
+        {{ list_var | last}}<br>
+        {{ dict_var }}<br>
+        {{ dict_var["name"] }}<br>
+        {{ dict_var.name }}<br>
+        {{ touple_var }}<br>
+        {{ touple_var[0] }}<br>
+        {{ touple_var.1 }}<br> 
+    </p>
+
+    <P>
+        更复杂的数据结构<br>
+        {{ book_list }}<br>
+        {{ book_list[1] }}<br>
+        {{ book_list.1.title.upper() }}<br>
+    </P>
+
+    <p>
+        内置的全局变量<br>
+        {{ request }}<br>
+        {{ request.path }}<br>
+        {{ request.method }}<br>
+        {{ session.uname }}
+        {{ g.num }}
+ 
+    </p>
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>前后端不分离展示</title>
+    <style>
+        .page a,.page span {
+            padding: 2px 6px;
+            color: #fff;
+            background: #6666ff;
+            text-decoration: none;
+        }
+        .page span {
+            color: #fff;
+            background: orange;
+        }
+    </style>
+</head>
+<body>
+   <table border="1" align="center" width="600">
+    <tr>
+        <th>ID</th>
+        <th>age</th>
+        <th>name</th>
+        <th>sex</th>
+        <th>email</th>
+        <th>money</th>
+    </tr>
+    {% for student in pagination.items %}
+    <tr>
+        <td>{{ student.id }}</td>
+        <td>{{ student.age }}</td>
+        <td>{{ student.name }}</td>
+        <td>{{ "男" if student.sex else "女" }}</td>
+        <td>{{ student.email }}</td>
+        <td>{{ student.money}}</td>
+    </tr>
+    {% endfor %}
+    <tr align="center">
+        <td colspan="5" class="page">
+            {% if pagination.has_prev %}
+            <a href="?page=1">首页</a>
+            <a href="?page={{ pagination.page-1 }}">上一页</a>
+            <a href="?page={{ pagination.page-1 }}">{{ pagination.page-1 }}</a>
+            {% endif %}
+            <span>{{ pagination.page }}</span>
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.page+1 }}">{{ pagination.page+1 }}</a>
+            <a href="?page={{ pagination.page+1 }}">下一页</a>
+            <a href="?page={{ pagination.pages }}">尾页</a>
+            {% endif %}
+
+        </td>
+    </tr>
+   </table>
+
+</body>
+</html>

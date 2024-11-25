@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+</head>
+<body>
+    <h1> 头部公共内容-菜单-登录窗口</h1>
+    {% block main %}
+    <p>这是父模版</p>
+    {% endblock main %}
+
+
+    <!-- 定义接口，给这个接口取一个名字叫 content-->
+    {% block content %}
+       <p style="background: red">这是父模板中的代码</p>
+    {% endblock %}
+</body>

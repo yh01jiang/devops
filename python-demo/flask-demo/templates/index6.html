@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    {# 列表过滤 #}
+    <p>{{ [1,2,3,4,5,6] | first }}</p>
+    <P>{{ [1,2,3,4,5,6] | last }} </P>
+    <P>{{ [1,2,3,4,5,6] | length }} </P>
+    <P>{{ [1,2,3,4,5,6] | count }} </P>   
+    <P>{{ [1,2,3,4,5,6] | sum }} </P>
+    <P>{{ [1,2,3,4,5,6] | sort }} </P> 
+    <p>{{ [1,2,3,4,5,6] | sort(reverse=true) }}</p>
+
+
+    {# 语句快过滤 #}
+    {% filter upper %}
+        <p>abc</p>
+        <p>{{ ["a", "c"]}}</p>
+        <p>{{ ["a", "c"]}}</p>
+        <p>{{ ["a", "c"]}}</p>
+        <p>{{ ["a", "c"]}}</p>
+    {% endfilter %}
+
+</body>
+</html>
