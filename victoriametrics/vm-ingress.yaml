@@ -1,0 +1,23 @@
+# grafana-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vm-ingress
+  namespace: tensuns
+spec:
+  tls:
+    - hosts:
+        - "barry-vm.*.com"
+      secretName: tls-*.com
+  rules:
+  - host: barry-vm.*.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: victoria-metrics
+            port:
+              number: 8428
+

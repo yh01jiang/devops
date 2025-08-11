@@ -1,0 +1,23 @@
+# grafana-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vmagent-ingress
+  namespace: tensuns
+spec:
+  tls:
+    - hosts:
+        - "barry-vmagent.*.com"
+      secretName: tls-*.com
+  rules:
+  - host: barry-vmagent.*.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vmagent
+            port:
+              number: 8429
+

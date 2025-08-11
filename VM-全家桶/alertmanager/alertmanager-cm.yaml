@@ -1,0 +1,141 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-config
+  namespace: tensuns
+data:
+  config.yml: |-
+    global:
+      # 当alertmanager持续多长时间未接收到告警后标记告警状态为 resolved
+      resolve_timeout: 5m
+      # 配置邮件发送信息
+      smtp_smarthost: 'smtpdm.aliyun.com:465'
+      smtp_from: 'devops-monitor@smtp.*.com'
+      smtp_auth_username: 'devops-monitor@smtp.kerryplu*s.com'
+      smtp_auth_password: '*****'
+      smtp_hello: 'smtp.*.com'
+      smtp_require_tls: false
+    # 所有报警信息进入后的根路由，用来设置报警的分发策略
+    route:
+      # 这里的标签列表是接收到报警信息后的重新分组标签，例如，接收到的报警信息里面有许多具有 cluster=A 和 alertname=LatncyHigh 这样的标签的报警信息将会批量被聚合到一个分组里面
+      group_by: ['alertname', 'cluster']
+      # 当一个新的报警分组被创建后，需要等待至少 group_wait 时间来初始化通知，这种方式可以确保您能有足够的时间为同一分组来获取多个警报，然后一起触发这个报警信息。
+      group_wait: 30s
+
+      # 相同的group之间发送告警通知的时间间隔
+      group_interval: 30s
+
+      # 如果一个报警信息已经发送成功了，等待 repeat_interval 时间来重新发送他们，不同类型告警发送频率需要具体配置
+      repeat_interval: 5m
+
+      # 默认的receiver：如果一个报警没有被一个route匹配，则发送给默认的接收器
+      receiver: default
+
+      # 上面所有的属性都由所有子路由继承，并且可以在每个子路由上进行覆盖。
+      routes:
+      # 同时把告警信息发送给邮箱以及钉钉
+      - receiver: email-and-dingtalk
+        group_wait: 10s
+        group_by: ['instance','alertname'] # 根据instance做分组
+ 
+      # 告警信息发动给邮箱，通过标签severity: warning区分发送渠道
+      #- receiver: email
+      #  group_wait: 10s
+      #  match:
+      #    severity: warning  # # 通过标签匹配,只要告警中有对应的标签即可进行拆分过滤。
+      #  group_by: ['instance','alertname'] # 根据instance做分组
+      # 告警信息发动给钉钉，通过标签severity: critical区分发送渠道
+      #- receiver: dingtalk-webhook  #  # 关键：匹配需要发送到钉钉的告警
+      #  group_wait: 10s 
+      #  match:  #精准匹配，match_re: 正则匹配
+      #    severity: critical  # # 通过标签匹配
+    
+ 
+      # 可以参考配置
+      #- receiver: slack
+      #  group_wait: 10s 
+      #  match_re:  #正则匹配
+      #    team: (frontend|backend)  # 匹配 frontend/backend 团队相关告警
+      #- receiver: 'webhook-wx'i
+      #  continue: false  # 告警只能匹配第一个符合条件的路由   # continue: true:允许告警在匹配当前路由规则后继续向下匹配其他同级,告警可匹配多个路由，发送到多个接收器
+      #  match_re:  #代表正则
+      #    alertname: .*
+    
+    # 抑制规则 
+    inhibit_rules:      #   抑制规则必须放在这里（与 route 同级）
+    - source_match:   # 源告警匹配条件
+        severity: critical
+      target_match:   # 被抑制的目标告警条件
+        severity: warning
+      equal: ['alertname', 'instance']  # 两者需共享这些标签才会触发抑制
+       
+    templates:  # 增加 templates 配置，指定模板文件
+    - '/etc/alertmanager/template_email.tmpl'
+
+    receivers:  # 接收器
+    # 接收器同时发送告警到邮箱以及钉钉,email-and-dingtalk 与上文的routes中相对应
+    - name: 'email-and-dingtalk'
+      email_configs:
+      - to: 'barry.jiang@kerryprops.com'
+        send_resolved: true
+        html: '{{ template "email.html" . }}' # 此处通过 html 指定模板文件中定义的 email.html 模板
+
+      webhook_configs:
+      - url: http://alert-webhook:5000/webhook
+        send_resolved: true
+    # 针对于邮箱发送告警
+    #- name: 'email'
+    #  email_configs:
+    #  - to: 'barry.jiang@kerryprops.com'
+    #    send_resolved: true
+    #    html: '{{ template "email.html" . }}' # 此处通过 html 指定模板文件中定义的 email.html 模板
+    # 针对于钉钉发送告警
+    #- name: 'dingtalk-webhook'
+    #  webhook_configs:
+    #  - url: http://alert-webhook:5000/webhook
+    #    send_resolved: true
+
+    # 与上文默认的接收器相对应 
+    - name: 'default' # # 兜底接收器
+      email_configs:
+      - to: 'barry.jiang@kerryprops.com'
+        send_resolved: true  # 接受告警恢复的通知
+
+
+  template_email.tmpl: |-
+    {{ define "email.html" }}
+    <html>
+    <body>
+      {{- if gt (len .Alerts.Firing) 0 -}}
+        {{- range .Alerts }}
+          <h4 style="color:#FF0000">🚨 Prometheus告警通知</h4>
+          <p><strong>🤖 告警类型</strong>：{{ .Labels.alertname }}</p>
+          <p><strong>📌 告警等级</strong>：<font color="#FF0000">{{ .Labels.severity }}</font></p>
+          <p><strong>🌐 项目环境</strong>：{{ .Labels.env }}</p>
+          <p><strong>🖥 实例地址</strong>：{{ .Labels.instance }}</p>
+          <p><strong>🕘 触发时间</strong>：{{ (.StartsAt.Add 28800e9).Format "2006-01-02 15:04:05" }}</p>
+          <p><strong>📝 告警详情</strong>：{{ .Annotations.description }}</p>
+          <font color="#FF0000">‼️ 请立即处理   ‼️</font>
+          <p><a href="{{ .GeneratorURL }}">📊 点击查看指标</a></p>
+          <hr/>
+        {{- end }}
+      {{- else if gt (len .Alerts.Resolved) 0 -}}
+        {{- range .Alerts }}
+          <h4 style="color:#02b340">✅ Prometheus恢复通知</h4>
+          <p><strong>🤖 告警类型</strong>：{{ .Labels.alertname }}</p>
+          <p><strong>📌 告警等级</strong>：<font color="#FF0000">{{ .Labels.severity }}</font></p>
+          <p><strong>🌐 项目环境</strong>：{{ .Labels.env }}</p>
+          <p><strong>🖥 实例地址</strong>：{{ .Labels.instance }}</p>
+          <p><strong>🕘 触发时间</strong>：{{ (.StartsAt.Add 28800e9).Format "2006-01-02 15:04:05" }}</p>
+          <p><strong>🕘 恢复时间</strong>：{{ (.EndsAt.Add 28800e9).Format "2006-01-02 15:04:05" }}</p>
+          <p><strong>🕘 恢复内容</strong>：{{ .Annotations.description }} </p>
+          <font color="#02b340">🔄 状态已恢复 🔄</font>
+          <p><a href="{{ .GeneratorURL }}">📊 点击查看历史指标</a></p>
+          <hr/>
+        {{- end }}
+      {{- end }}
+    </body>
+    </html>
+    {{ end }}
+
+

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-webhook
+  namespace: tensuns
+  labels:
+    app: alert-webhook
+    app.kubernetes.io/instance: alert-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert-webhook
+  template:
+    metadata:
+      labels:
+        app: alert-webhook
+    spec:
+      containers:
+        - name: alert-webhook
+          image: *-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/python-3.10-slim-dingding:v13
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+            - name: ALERTMANAGER_URL
+              value: http://alertmanager:9093
+            #- name: DEFAULT_AT
+            #  value: a00213
+            #- name: DINGTALK_ACCESS_TOKEN
+            #  value: 672028ce17feaf689fcc865e499201f93b4446b540acb8a963e24e1e1a875009
+            #- name: DINGTALK_SECRET
+            #  value: SEC840e8e73beb942753d6bd0fa523e4d676da6a64d6aa4fb89e14a15550fdebe54
+          resources:
+            limits:
+              cpu: '1'
+              memory: 1Gi
+            requests:
+              cpu: '0.5'
+              memory: 500Mi
+          livenessProbe:
+            tcpSocket:
+              port: 5000
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 5000
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          imagePullPolicy: Always
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-webhook
+  namespace: tensuns
+  labels:
+    app: alert-webhook
+    app.kubernetes.io/instance: alert-webhook
+
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5000
+  selector:
+    app: alert-webhook
+  type: ClusterIP
+

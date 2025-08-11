@@ -1,0 +1,69 @@
+---  
+apiVersion: v1
+data:
+  redis_passwd.json: |
+    {
+      "redis://r-uf6acipsdbwmuqbrle.redis.rds.aliyuncs.com:6379":"dev_kip_badge:C4UAg7Go^xgWtEYCzBOP7VbtVvbiQ&mn",
+      "redis://kerry-devops-argocd.redis.rds.aliyuncs.com:63796":"devops_argocd:!pWpIaOJJT9fHdpdT%FqokARh3g5Rron"
+    }
+kind: ConfigMap
+metadata:
+  name: redis-passwd-cm
+  namespace: tensuns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: redis-exporter-prod
+  name: redis-exporter-prod
+  namespace: tensuns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-exporter-prod
+  template:
+    metadata:
+      labels:
+        app: redis-exporter-prod
+    spec:
+      containers:
+      - name: redis-exporter
+        image: *-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/redis_exporter:latest 
+        env:
+        - name: TZ
+          value: "Asia/Shanghai"
+        args:
+        - "-redis.password-file=/opt/redis_passwd.json"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - name: http-metrics
+          containerPort: 9121
+          protocol: TCP
+        volumeMounts:
+        - name: redis-passwd-conf-map
+          mountPath: "/opt"
+      volumes:
+      - name: redis-passwd-conf-map
+        configMap:
+          name: redis-passwd-cm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: redis-exporter-prod
+  name: redis-exporter-prod
+  namespace: tensuns
+spec:
+  ports:
+  - name: http-metirc
+    protocol: TCP
+    port: 9121
+    targetPort: 9121
+  selector:
+    app: redis-exporter-prod

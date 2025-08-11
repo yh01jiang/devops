@@ -1,0 +1,107 @@
+#apiVersion: v1
+#data:
+#  blackbox.yml: |-
+#    "modules":
+#      "http_2xx":
+#        "http":
+#          "preferred_ip_protocol": "ip4"
+#          "valid_http_versions": ["HTTP/1.1", "HTTP/2"]
+#          "method": "GET"
+#        "prober": "http"
+#        "timeout": "5s"
+#      "http_post_2xx": # POST 请求
+#        "http":
+#          "method": "POST"
+#          "preferred_ip_protocol": "ip4"
+#        "prober": "http"
+#      "tcp_connect": # tcp 连接
+#        "prober": "tcp"
+#        "timeout": "10s"
+#        "tcp":
+#          "preferred_ip_protocol": "ip4"
+#      "dns":  # DNS 检测模块
+#        "prober": "dns"
+#        "dns":
+#          "transport_protocol": "udp"  # 默认是 udp，tcp
+#          "preferred_ip_protocol": "ip4"  # 默认是 ip6
+#          query_name: "kubernetes.default.svc.cluster.local" # 利用这个域名来检查dns服务器
+#      icmp:  # ping 检测服务器的存活
+#        prober: icmp
+#kind: ConfigMap
+#metadata:
+#  labels:
+#    app.kubernetes.io/component: exporter
+#    app.kubernetes.io/name: blackbox-exporter
+#  name: blackbox-exporter-configuration
+#  namespace: tensuns
+#
+#
+---
+apiVersion: v1
+data:
+  blackbox.yml: |-
+    modules:
+      http_2xx:
+        prober: http
+        http:
+          valid_status_codes: [200,204]
+          no_follow_redirects: true
+          preferred_ip_protocol: ip4
+          ip_protocol_fallback: false   
+          # 用于需要检查SSL证书有效性，但是该域名访问后又会重定向到其它域名的情况，这样检查的证书有效期就是重定向后域名的。
+          # 如果需要检查源域名信息，需要在blackbox中增加禁止重定向参数。：禁止重定向（no_follow_redirects: true）
+      httpNoRedirect4ssl:
+        prober: http
+        http:
+          valid_status_codes: [200,204,301,302,303]
+          no_follow_redirects: true
+          preferred_ip_protocol: ip4
+          ip_protocol_fallback: false
+
+      # 用于忽略SSL证书检查的站点监控。
+      http200igssl:
+        prober: http
+        http:
+          valid_status_codes:
+          - 200
+          tls_config:
+            insecure_skip_verify: true
+
+      http_4xx:
+        prober: http
+        http:
+          valid_status_codes: [401,403,404]
+          preferred_ip_protocol: ip4
+          ip_protocol_fallback: false
+
+      http_5xx:
+        prober: http
+        http:
+          valid_status_codes: [500,502]
+          preferred_ip_protocol: ip4
+          ip_protocol_fallback: false
+
+      http_post_2xx:
+        prober: http
+        http:
+          method: POST
+
+      icmp:
+        prober: icmp
+
+      tcp_connect:
+        prober: tcp
+
+      ssh_banner:
+        prober: tcp
+        tcp:
+          query_response:
+          - expect: "^SSH-2.0-"
+          - send: "SSH-2.0-blackbox-ssh-check"
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/name: blackbox-exporter
+  name: blackbox-exporter-configuration
+  namespace: tensuns

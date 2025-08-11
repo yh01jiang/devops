@@ -1,0 +1,458 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: tensuns
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      scrape_timeout: 15s
+      # 外部标签，用于在grafana dashboard 13105 模版上选择不同来源的prometheus
+      external_labels:
+        origin_prometheus: prom-ops
+
+    remote_write:   # 远程写入VM存储
+    - url: http://victoria-metrics:8428/api/v1/write
+
+    scrape_configs:
+    - job_name: 'prometheus'
+      static_configs:
+      - targets: ['localhost:9090']
+
+    - job_name: 'k8s-nodes'
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*):10250'
+        replacement: '${1}:9100'
+        target_label: __address__
+        action: replace
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+
+    #- job_name: 'kubernetes-cadvisor'
+    #  kubernetes_sd_configs:
+    #  - role: node
+    #  scheme: https
+    #  tls_config:
+    #    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    #    insecure_skip_verify: true
+    #  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    #  relabel_configs:
+    #  - action: labelmap
+    #    regex: __meta_kubernetes_node_label_(.+)
+    #    replacement: $1
+    #  - source_labels: [__meta_kubernetes_node_name]
+    #    regex: (.+)
+    #    replacement: /metrics/cadvisor    # <nodeip>/metrics -> <nodeip>/metrics/cadvisor
+    #    target_label: __metrics_path__
+
+    #- job_name: 'kubelet'
+    #  kubernetes_sd_configs:
+    #  - role: node
+    #  scheme: https
+    #  tls_config:
+    #    ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    #    insecure_skip_verify: true
+    #  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    #  relabel_configs:
+    #  - action: labelmap
+    #    regex: __meta_kubernetes_node_label_(.+)
+
+
+    - job_name: 'kubernetes-endpoints'
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+        action: replace
+        target_label: __scheme__
+        regex: (https?)
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+        action: replace
+        target_label: __address__
+        regex: ([^:]+)(?::\d+)?;(\d+)  # RE2 正则规则，+是一次多多次，?是0次或1次，其中?:表示非匹配组(意思就是不获取匹配结果)
+        replacement: $1:$2
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        action: replace
+        target_label: kubernetes_name
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+
+    - job_name: 'k8s-kubelet'
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+
+    - job_name: 'k8s-cadvisor'
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+      metric_relabel_configs:
+      - source_labels: [instance]
+        separator: ;
+        regex: (.+)
+        target_label: node
+        replacement: $1
+        action: replace
+
+    #- job_name: 'kube-state-metrics'
+    #  kubernetes_sd_configs:
+    #  - role: endpoints
+    #  relabel_configs:
+    #  #- source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
+    #  #  regex: kube-state-metrics
+    #  #  replacement: $1
+    #  #  action: keep
+    #  - action: labelmap
+    #    regex: __meta_kubernetes_service_label_(.+)
+    #  #- source_labels: [__meta_kubernetes_namespace]
+    #  #  action: replace
+    #  #  target_label: k8s_namespace
+    #  #- source_labels: [__meta_kubernetes_service_name]
+    #  #  action: replace
+    #  #  target_label: k8s_sname
+
+    - job_name: node_exporter
+      scrape_interval: 15s
+      scrape_timeout: 5s
+      consul_sd_configs:
+        - server: 'consul:8500'
+          token: '260a528a-90f4-484b-9c4e-3b1c4d5c3b03'
+          refresh_interval: 30s
+          services: ['alicloud_跳板机账户_ecs','selfnode_exporter']
+          tags: ['linux']
+      relabel_configs:
+        - source_labels: [__meta_consul_tags]
+          regex: .*OFF.*
+          action: drop
+        - source_labels: ['__meta_consul_service']
+          target_label: cservice
+        - source_labels: ['__meta_consul_service_metadata_vendor']
+          target_label: vendor
+        - source_labels: ['__meta_consul_service_metadata_region']
+          target_label: region
+        - source_labels: ['__meta_consul_service_metadata_group']
+          target_label: group
+        - source_labels: ['__meta_consul_service_metadata_account']
+          target_label: account
+        - source_labels: ['__meta_consul_service_metadata_name']
+          target_label: name
+        - source_labels: ['__meta_consul_service_metadata_iid']
+          target_label: iid
+        - source_labels: ['__meta_consul_service_metadata_exp']
+          target_label: exp
+        - source_labels: ['__meta_consul_service_metadata_instance']
+          target_label: instance
+        - source_labels: [instance]
+          target_label: __address__
+
+    - job_name: 'blackbox_exporter'
+      scrape_interval: 15s
+      scrape_timeout: 5s
+      metrics_path: /probe
+      consul_sd_configs:
+        - server: 'consul:8500'
+          token: '260a528a-90f4-484b-9c4e-3b1c4d5c3b03'
+          services: ['blackbox_exporter']
+      relabel_configs:
+        - source_labels: ["__meta_consul_service_metadata_instance"]
+          target_label: __param_target
+        - source_labels: [__meta_consul_service_metadata_module]
+          target_label: __param_module
+        - source_labels: [__meta_consul_service_metadata_module]
+          target_label: module
+        - source_labels: ["__meta_consul_service_metadata_company"]
+          target_label: company
+        - source_labels: ["__meta_consul_service_metadata_env"]
+          target_label: env
+        - source_labels: ["__meta_consul_service_metadata_name"]
+          target_label: name
+        - source_labels: ["__meta_consul_service_metadata_project"]
+          target_label: project
+        - source_labels: ["__meta_consul_service_metadata_owner"]
+          target_label: owner
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: blackbox-exporter:9115
+
+    - job_name: 'TenSunS-REDIS'
+      scrape_interval: 30s
+      scrape_timeout: 15s
+      static_configs:
+      - targets:
+        - alicloud/demo/cn-shanghai
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __metrics_path__
+          regex: (.*)
+          replacement: /api/cloud_redis_metrics/${1}
+        - target_label: __address__
+          replacement: tensuns:1026
+
+    - job_name: redis_exporter
+      scrape_interval: 15s
+      scrape_timeout: 10s
+      metrics_path: /scrape
+      consul_sd_configs:
+        - server: 'consul:8500'
+          token: '260a528a-90f4-484b-9c4e-3b1c4d5c3b03'
+          refresh_interval: 30s
+          services: ['alicloud_system_redis']
+      relabel_configs:
+        - source_labels: [__meta_consul_tags]
+          regex: .*OFF.*
+          action: drop
+        - source_labels: [__meta_consul_service_address,__meta_consul_service_port]
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          target_label: __param_target
+          replacement: $1:$2
+        - source_labels: [__param_target]
+          target_label: instance
+        - target_label: __address__
+          replacement: redis-exporter-prod:9121
+        - source_labels: ['__meta_consul_service_metadata_vendor']
+          target_label: vendor
+        - source_labels: ['__meta_consul_service_metadata_region']
+          target_label: region
+        - source_labels: ['__meta_consul_service_metadata_group']
+          target_label: group
+        - source_labels: ['__meta_consul_service_metadata_account']
+          target_label: account
+        - source_labels: ['__meta_consul_service_metadata_name']
+          target_label: name
+        - source_labels: ['__meta_consul_service_metadata_iid']
+          target_label: iid
+        - source_labels: ['__meta_consul_service_metadata_mem']
+          target_label: mem
+        - source_labels: ['__meta_consul_service_metadata_itype']
+          target_label: itype
+        - source_labels: ['__meta_consul_service_metadata_ver']
+          target_label: ver
+        - source_labels: ['__meta_consul_service_metadata_exp']
+          target_label: exp
+
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ["alertmanager:9093"]
+
+    rule_files:
+    - /etc/prometheus/rules.yml
+    - /etc/prometheus/recording_rules.yml
+
+
+  rules.yml: |
+    groups:
+      - name: Domain
+        rules:
+        - alert: 站点可用性
+          expr: probe_success{job="blackbox_exporter"} == 0
+          for: 1m
+          labels:
+            alertype: domain
+            severity: critical
+          annotations:
+            description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：站点无法访问\n> {{ $labels.instance }}"
+
+        - alert: 站点1h可用性低于80%
+          expr: sum_over_time(probe_success{job="blackbox_exporter"}[1h])/count_over_time(probe_success{job="blackbox_exporter"}[1h]) * 100 < 80
+          for: 3m
+          labels:
+            alertype: domain
+            severity: warning
+          annotations:
+            description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：站点1h可用性：{{ $value | humanize }}%\n> {{ $labels.instance }}"
+
+        - alert: 站点状态异常
+          expr: (probe_success{job="blackbox_exporter"} == 0 and probe_http_status_code > 499) or probe_http_status_code == 0
+          for: 1m
+          labels:
+            alertype: domain
+            severity: warning
+          annotations:
+            description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：站点状态异常：{{ $value }}\n> {{ $labels.instance }}"
+
+        - alert: 站点耗时过高
+          expr: probe_duration_seconds > 0.5
+          for: 2m
+          labels:
+            alertype: domain
+            severity: warning
+          annotations:
+            description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：当前站点耗时：{{ $value | humanize }}s\n> {{ $labels.instance }}"
+
+        - alert: SSL证书有效期
+          expr: (probe_ssl_earliest_cert_expiry-time()) / 3600 / 24 < 15
+          for: 1m
+          labels:
+            alertype: domain
+            severity: warning
+          annotations:
+            description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：证书有效期剩余{{ $value | humanize }}天\n> {{ $labels.instance }}"
+
+  recording_rules.yml: |
+    groups:   #新rule文件需要加这行开头，追加旧的rule文件则不需要。
+      - name: node_usage_record_rules
+        interval: 1m
+        rules:
+        - record: cpu:usage:rate1m
+          expr: (1 - avg(irate(node_cpu_seconds_total{mode="idle"}[3m])) by (instance,vendor,account,group,name)) * 100
+        - record: mem:usage:rate1m
+          expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100
+
+      - name: node-exporter
+        rules:
+        - alert: ECS内存使用率
+          expr: 100 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+          for: 5m
+          labels:
+            alertype: system
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}：内存使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: ECS_CPU使用率
+          expr: 100 - (avg by(instance,name,group,account) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+          for: 5m
+          labels:
+            alertype: system
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}：CPU使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: ECS系统负载
+          expr: node_load5 / on (instance,name,group,account) sum(count(node_cpu_seconds_total{mode='system'}) by (cpu,instance,name,group,account)) by(instance,name,group,account) > 1.7
+          for: 10m
+          labels:
+            alertype: system
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}：系统负载{{ $value | humanize }}倍\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: ECS磁盘使用率
+          expr: |
+            100 - (node_filesystem_avail_bytes/node_filesystem_size_bytes{fstype=~"ext.?|xfs",mountpoint!~".*pods.*|/var/lib/docker/devicemapper/mnt/.*"} * 100) > 85
+          for: 5m
+          labels:
+            alertype: system
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}_{{ $labels.mountpoint }}：磁盘使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: ECS主机重启
+          expr: node_time_seconds - node_boot_time_seconds < 600
+          for: 1m
+          labels:
+            alertype: system
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}：主机重启\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: ECS文件系统只读
+          expr: node_filesystem_readonly == 1
+          for: 1m
+          labels:
+            alertype: system
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}-{{ $labels.mountpoint }}：文件系统只读\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: K8S节点POD磁盘使用率
+          expr: 100 - (node_filesystem_avail_bytes/node_filesystem_size_bytes{mountpoint=~"/var/lib/docker/devicemapper/mnt/.*"} * 100) > 85
+          for: 5m
+          labels:
+            alertype: system
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}_{{ $labels.mountpoint }}：磁盘使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: NFS磁盘使用率
+          expr: 100 - (node_filesystem_avail_bytes/node_filesystem_size_bytes{fstype="nfs"} * 100) > 90
+          for: 5m
+          labels:
+            alertype: system
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}_{{ $labels.mountpoint }}：磁盘使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: ECS磁盘读写容量
+          expr: (irate(node_disk_read_bytes_total[5m]) ) /1024 /1024  > 80 or (irate(node_disk_written_bytes_total[5m]) ) /1024 /1024 > 80
+          for: 8m
+          labels:
+            alertype: disk
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}_{{ $labels.device }}：当前IO为{{ $value | humanize }}MB/s\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: ECS网络流入（下载）数据过多
+          expr: sum by(device,instance, name, group, account) (irate(node_network_receive_bytes_total{device!~'tap.*|veth.*|br.*|docker.*|virbr.*|lo.*|cni.*'}[5m])) / 1024 / 1024 > 70
+          for: 5m
+          labels:
+            alertype: network
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}：流入数据为{{ $value | humanize }}MB/s\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+        - alert: ECS网络流出（上传）数据过多
+          expr: sum by(device,instance, name, group, account) (irate(node_network_transmit_bytes_total{device!~'tap.*|veth.*|br.*|docker.*|virbr.*|lo.*|cni.*'}[5m])) / 1024 / 1024 > 70
+          for: 5m
+          labels:
+            alertype: network
+            severity: warning
+          annotations:
+            description: "{{ $labels.name }}：流出数据为{{ $value | humanize }}MB/s\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - name: Itself
+        rules:
+        - alert: Exporter状态
+          expr: up == 0
+          for: 3m
+          labels:
+            alertype: itself
+            severity: critical
+          annotations:
+            description: "{{ $labels.job }}：异常\n> {{ $labels.group }}-{{ $labels.name }}-{{ $labels.instance }}"

@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: tensuns
+  labels:
+    app: alertmanager
+spec:
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      volumes:
+        - name: alertcfg
+          configMap:
+            name: alert-config
+      containers:
+        - name: alertmanager
+          #image: prom/alertmanager:v0.24.0
+          image: ***-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/prometheus/alertmanager:v0.27.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--config.file=/etc/alertmanager/config.yml"
+            - "--log.level=debug"
+          ports:
+            - containerPort: 9093
+              name: http
+          volumeMounts:
+            - mountPath: "/etc/alertmanager"
+              name: alertcfg
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+
+
+
+---
+# alertmanager-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: tensuns
+  labels:
+    app: alertmanager
+spec:
+  selector:
+    app: alertmanager
+  type: ClusterIP
+  ports:
+    - name: web
+      port: 9093
+      targetPort: http
+

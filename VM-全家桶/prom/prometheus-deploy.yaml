@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: tensuns
+  labels:
+    app: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus-tensuns
+      initContainers:
+      - name: fix-permissions
+        image: *-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/busybox:1.31.1
+        command: ["chown", "-R", "65534:65534", "/prometheus"]
+        volumeMounts:
+        - name: data
+          mountPath: /prometheus
+      containers:
+      - image: *-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/prometheus/prometheus:v2.31.1
+      #- image: kerrysmart-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/prometheus/prometheus:v3.4.2
+        name: prometheus
+        command:
+        - "/bin/prometheus"
+        args:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus"
+        - "--storage.tsdb.retention=1h"
+        - "--web.enable-admin-api"  # 控制对admin HTTP API的访问，其中包括删除时间序列等功能
+        - "--web.enable-lifecycle"  # 支持热更新，直接执行localhost:9090/-/reload立即生效
+        - "--web.external-url=https://barry-prom.kerryplus.com"  # 替换为实际外部地址,目地获取{{generatorURL }}值.用于alertmanage发送报警的邮件模版的渲染值
+        - "--log.level=debug"
+        ports:
+        - containerPort: 9090
+          protocol: TCP
+          name: http
+        volumeMounts:
+        - mountPath: "/prometheus"
+          #subPath: prometheus
+          name: data
+        - mountPath: "/etc/prometheus"
+          name: config-volume
+        resources:
+          requests:
+            cpu: 1
+            memory: 1024Mi
+          limits:
+            cpu: 2
+            memory: 3072Mi
+      #securityContext:
+      #  runAsUser: 0
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: prom-tensuns
+      - configMap:
+          name: prometheus-config
+        name: config-volume
+
+

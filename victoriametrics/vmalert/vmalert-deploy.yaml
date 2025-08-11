@@ -1,0 +1,247 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vmalert-config
+  namespace: tensuns
+data:
+  node.yaml: |-
+    groups:
+    - name: Domain
+      rules:
+      - alert: 站点可用性
+        expr: probe_success{job="blackbox_exporter"} == 0
+        for: 1m
+        labels:
+          alertype: domain
+          severity: critical
+        annotations:
+          description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：站点无法访问\n> {{ $labels.instance }}"
+
+      - alert: 站点1h可用性低于80%
+        expr: sum_over_time(probe_success{job="blackbox_exporter"}[1h])/count_over_time(probe_success{job="blackbox_exporter"}[1h]) * 100 < 80
+        for: 3m
+        labels:
+          alertype: domain
+          severity: warning
+        annotations:
+          description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：站点1h可用性：{{ $value | humanize }}%\n> {{ $labels.instance }}"
+
+      - alert: 站点状态异常
+        expr: (probe_success{job="blackbox_exporter"} == 0 and probe_http_status_code > 499) or probe_http_status_code == 0
+        for: 1m
+        labels:
+          alertype: domain
+          severity: warning
+        annotations:
+          description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：站点状态异常：{{ $value }}\n> {{ $labels.instance }}"
+
+      - alert: 站点耗时过高
+        expr: probe_duration_seconds > 0.5
+        for: 2m
+        labels:
+          alertype: domain
+          severity: warning
+        annotations:
+          description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：当前站点耗时：{{ $value | humanize }}s\n> {{ $labels.instance }}"
+
+      - alert: SSL证书有效期
+        expr: (probe_ssl_earliest_cert_expiry-time()) / 3600 / 24 < 400
+        for: 1m
+        labels:
+          alertype: domain
+          severity: warning
+        annotations:
+          description: "{{ $labels.env }}_{{ $labels.name }}({{ $labels.project }})：证书有效期剩余{{ $value | humanize }}天\n> {{ $labels.instance }}"
+    - name: Itself
+      rules:
+      - alert: Exporter状态
+        expr: up == 0
+        for: 1m
+        labels:
+          alertype: itself
+          severity: critical
+        annotations:
+          description: "{{ $labels.job }}：异常\n> {{ $labels.group }}-{{ $labels.name }}-{{ $labels.instance }}"
+
+    - name: node-exporter
+      rules:
+      - alert: ECS内存使用率
+        expr: 100 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 10
+        for: 5m
+        labels:
+          alertype: system
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}：内存使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+    
+      - alert: ECS_CPU使用率
+        expr: 100 - (avg by(instance,name,group,account) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 5m
+        labels:
+          alertype: system
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}：CPU使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - alert: ECS系统负载
+        expr: node_load5 / on (instance,name,group,account) sum(count(node_cpu_seconds_total{mode='system'}) by (cpu,instance,name,group,account)) by(instance,name,group,account) > 1.7
+        for: 10m
+        labels:
+          alertype: system
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}：系统负载{{ $value | humanize }}倍\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - alert: ECS磁盘使用率
+        expr: |
+          100 - (node_filesystem_avail_bytes/node_filesystem_size_bytes{fstype=~"ext.?|xfs",mountpoint!~".*pods.*|/var/lib/docker/devicemapper/mnt/.*"} * 100) > 85
+        for: 5m
+        labels:
+          alertype: system
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}_{{ $labels.mountpoint }}：磁盘使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - alert: ECS主机重启
+        expr: node_time_seconds - node_boot_time_seconds < 600
+        for: 1m
+        labels:
+          alertype: system
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}：主机重启\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - alert: ECS文件系统只读
+        expr: node_filesystem_readonly == 1
+        for: 1m
+        labels:
+          alertype: system
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}-{{ $labels.mountpoint }}：文件系统只读\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - alert: K8S节点POD磁盘使用率
+        expr: 100 - (node_filesystem_avail_bytes/node_filesystem_size_bytes{mountpoint=~"/var/lib/docker/devicemapper/mnt/.*"} * 100) > 85
+        for: 5m
+        labels:
+          alertype: system
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}_{{ $labels.mountpoint }}：磁盘使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - alert: NFS磁盘使用率
+        expr: 100 - (node_filesystem_avail_bytes/node_filesystem_size_bytes{fstype="nfs"} * 100) > 90
+        for: 5m
+        labels:
+          alertype: system
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}_{{ $labels.mountpoint }}：磁盘使用率{{ $value | humanize }}%\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - alert: ECS磁盘读写容量
+        expr: (irate(node_disk_read_bytes_total[5m]) ) /1024 /1024  > 80 or (irate(node_disk_written_bytes_total[5m]) ) /1024 /1024 > 80
+        for: 8m
+        labels:
+          alertype: disk
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}_{{ $labels.device }}：当前IO为{{ $value | humanize }}MB/s\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - alert: ECS网络流入（下载）数据过多
+        expr: sum by(device,instance, name, group, account) (irate(node_network_receive_bytes_total{device!~'tap.*|veth.*|br.*|docker.*|virbr.*|lo.*|cni.*'}[5m])) / 1024 / 1024 > 70
+        for: 5m
+        labels:
+          alertype: network
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}：流入数据为{{ $value | humanize }}MB/s\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+      - alert: ECS网络流出（上传）数据过多
+        expr: sum by(device,instance, name, group, account) (irate(node_network_transmit_bytes_total{device!~'tap.*|veth.*|br.*|docker.*|virbr.*|lo.*|cni.*'}[5m])) / 1024 / 1024 > 70
+        for: 5m
+        labels:
+          alertype: network
+          severity: warning
+        annotations:
+          description: "{{ $labels.name }}：流出数据为{{ $value | humanize }}MB/s\n> {{ $labels.group }}-{{ $labels.instance }}"
+
+
+  record.yaml: |
+    groups:
+    - name: node_usage_record_rules
+      interval: 1m
+      rules:
+      - record: cpu:usage:rate1m
+        expr: (1 - avg(irate(node_cpu_seconds_total{mode="idle"}[3m])) by (origin_prometheus,instance,job)) * 100
+      - record: mem:usage:rate1m
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmalert
+  namespace: tensuns
+  labels:
+    app: vmalert
+spec:
+  ports:
+    - name: vmalert
+      port: 8080
+      targetPort: 8080
+  #type: NodePort
+  type: ClusterIP
+  selector:
+    app: vmalert
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmalert
+  namespace: tensuns
+  labels:
+    app: vmalert
+spec:
+  selector:
+    matchLabels:
+      app: vmalert
+  template:
+    metadata:
+      labels:
+        app: vmalert
+    spec:
+      containers:
+        - name: vmalert
+          #image: victoriametrics/vmalert:latest
+          image: kerrysmart-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/victoriametrics/vmalert:v1.116.0
+          imagePullPolicy: IfNotPresent
+          # -external.url=https://barry-vmalert.kerryplus.com: 代表生成的外部地址,目地获取{{generatorURL }}值.用于alertmanage发送报警的邮件模版的渲染值
+          args:
+            - -rule=/etc/ruler/*.yaml
+            - -datasource.url=http://victoria-metrics.tensuns:8428
+            - -notifier.url=http://alertmanager.tensuns:9093
+            - -remoteWrite.url=http://victoria-metrics.tensuns:8428
+            - -evaluationInterval=15s
+            - -httpListenAddr=0.0.0.0:8080
+            - -external.url=https://barry-vmalert.kerryplus.com
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          resources:
+            limits:
+              cpu: '2'
+              memory: 2Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - mountPath: /etc/ruler/
+              name: ruler
+              readOnly: true
+      volumes:
+        - configMap:
+            name: vmalert-config
+          name: ruler

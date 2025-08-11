@@ -1,0 +1,23 @@
+# grafana-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blackbox-exporter-ingress
+  namespace: tensuns
+spec:
+  tls:
+    - hosts:
+        - "barry-black.*.com"
+      secretName: tls-*.com
+  rules:
+  - host: barry-black.*.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: blackbox-exporter
+            port:
+              number: 3000
+

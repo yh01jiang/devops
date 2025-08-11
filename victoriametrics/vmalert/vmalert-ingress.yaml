@@ -1,0 +1,23 @@
+# grafana-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vmalert-ingress
+  namespace: tensuns
+spec:
+  tls:
+    - hosts:
+        - "barry-vmalert.*.com"
+      secretName: tls-*.com
+  rules:
+  - host: barry-vmalert.*.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vmalert
+            port:
+              number: 8080
+

@@ -1,0 +1,355 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vmagent
+  namespace: tensuns
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vmagent
+rules:
+  - apiGroups: ["", "networking.k8s.io", "extensions"]
+    resources:
+      - nodes
+      - nodes/metrics
+      - nodes/proxy
+      - services
+      - endpoints
+      - endpointslices
+      - pods
+      - app
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - namespaces
+      - configmaps
+    verbs: ["get"]
+  - nonResourceURLs: ["/metrics", "/metrics/resources"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vmagent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vmagent
+subjects:
+  - kind: ServiceAccount
+    name: vmagent
+    namespace: tensuns
+
+---
+# vmagent-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vmagent-config
+  namespace: tensuns
+data:
+  scrape.yml: |
+    global:
+      scrape_interval: 30s
+      scrape_timeout: 30s
+      external_labels:
+        origin_prometheus: prom-vmagent
+
+    scrape_configs:
+      - job_name: 'vmagent'
+        static_configs:
+        - targets: ['localhost:8429']
+      - job_name: 'vmalert'
+        static_configs:
+        - targets: ['vmalert.tensuns:8080']
+      - job_name: 'alertmanager'
+        static_configs:
+        - targets: ['alertmanager.tensuns:9093']
+      - job_name: 'victoria-metrics'
+        static_configs:
+        - targets: ['victoria-metrics.tensuns:8428']
+        # basic_auth:
+        #   username: ops
+        #   password: wEFHr41Pa
+      - job_name: 'grafana'
+        static_configs:
+        - targets: ['grafana.tensuns:3000']
+
+      - job_name: 'k8s-nodes-export-vmagent'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - source_labels: [__address__]
+          regex: '(.*):10250'
+          replacement: '${1}:9100'
+          target_label: __address__
+          action: replace
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+
+      - job_name: 'kubernetes-cadvisor-vmagent'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+          replacement: $1
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node  #新增node标签，因为cadvisor默认使用instance标签，因此增加node标签为了方便与kube-state-metrics默认的node标签集成
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          replacement: /metrics/cadvisor    # <nodeip>/metrics -> <nodeip>/metrics/cadvisor
+          target_label: __metrics_path__
+
+      - job_name: 'k8s-kubelet-vmagent'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+
+
+      - job_name: 'kubernetes-endpoints-vmagent'
+        kubernetes_sd_configs:
+        - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+          action: replace
+          target_label: __scheme__
+          regex: (https?)
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+          action: replace
+          target_label: __address__
+          regex: ([^:]+)(?::\d+)?;(\d+)  # RE2 正则规则，+是一次多多次，?是0次或1次，其中?:表示非匹配组(意思就是不获取匹配结果)
+          replacement: $1:$2
+        - action: labelmap
+          regex: __meta_kubernetes_service_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_service_name]
+          action: replace
+          target_label: kubernetes_name
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+
+
+      - job_name: node_exporter
+        scrape_interval: 15s
+        scrape_timeout: 5s
+        consul_sd_configs:
+          - server: 'consul:8500'
+            token: '260a528a-90f4-484b-9c4e-3b1c4d5c3b03'
+            #refresh_interval: 30s
+            services: ['alicloud_跳板机账户_ecs','selfnode_exporter']
+            tags: ['linux']
+        relabel_configs:
+          - source_labels: [__meta_consul_tags]
+            regex: .*OFF.*
+            action: drop
+          - source_labels: ['__meta_consul_service']
+            target_label: cservice
+          - source_labels: ['__meta_consul_service_metadata_vendor']
+            target_label: vendor
+          - source_labels: ['__meta_consul_service_metadata_region']
+            target_label: region
+          - source_labels: ['__meta_consul_service_metadata_group']
+            target_label: group
+          - source_labels: ['__meta_consul_service_metadata_account']
+            target_label: account
+          - source_labels: ['__meta_consul_service_metadata_name']
+            target_label: name
+          - source_labels: ['__meta_consul_service_metadata_iid']
+            target_label: iid
+          - source_labels: ['__meta_consul_service_metadata_exp']
+            target_label: exp
+          - source_labels: ['__meta_consul_service_metadata_instance']
+            target_label: instance
+          - source_labels: ["__meta_consul_service_metadata_env"]
+            target_label: env
+          - source_labels: [instance]
+            target_label: __address__
+
+      - job_name: 'blackbox_exporter'
+        scrape_interval: 15s
+        scrape_timeout: 5s
+        metrics_path: /probe
+        consul_sd_configs:
+          - server: 'consul:8500'
+            token: '260a528a-90f4-484b-9c4e-3b1c4d5c3b03'
+            services: ['blackbox_exporter']
+        relabel_configs:
+          - source_labels: ["__meta_consul_service_metadata_instance"]
+            target_label: __param_target
+          - source_labels: [__meta_consul_service_metadata_module]
+            target_label: __param_module
+          - source_labels: [__meta_consul_service_metadata_module]
+            target_label: module
+          - source_labels: ["__meta_consul_service_metadata_company"]
+            target_label: company
+          - source_labels: ["__meta_consul_service_metadata_env"]
+            target_label: env
+          - source_labels: ["__meta_consul_service_metadata_name"]
+            target_label: name
+          - source_labels: ["__meta_consul_service_metadata_project"]
+            target_label: project
+          - source_labels: ["__meta_consul_service_metadata_owner"]
+            target_label: owner
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter:9115
+   
+      - job_name: 'TenSunS-REDIS'
+        scrape_interval: 30s
+        scrape_timeout: 15s
+        static_configs:
+        - targets:
+          - alicloud/demo/cn-shanghai
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __metrics_path__
+            regex: (.*)
+            replacement: /api/cloud_redis_metrics/${1}
+          - target_label: __address__
+            replacement: tensuns:1026
+
+      - job_name: redis_exporter
+        scrape_interval: 15s
+        scrape_timeout: 10s
+        metrics_path: /scrape
+        consul_sd_configs:
+          - server: 'consul:8500'
+            token: '260a528a-90f4-484b-9c4e-3b1c4d5c3b03'
+            #refresh_interval: 30s
+            services: ['alicloud_system_redis']
+        relabel_configs:
+          - source_labels: [__meta_consul_tags]
+            regex: .*OFF.*
+            action: drop
+          - source_labels: [__meta_consul_service_address,__meta_consul_service_port]
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            target_label: __param_target
+            replacement: $1:$2
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: redis-exporter-prod:9121
+          - source_labels: ['__meta_consul_service_metadata_vendor']
+            target_label: vendor
+          - source_labels: ['__meta_consul_service_metadata_region']
+            target_label: region
+          - source_labels: ['__meta_consul_service_metadata_group']
+            target_label: group
+          - source_labels: ['__meta_consul_service_metadata_account']
+            target_label: account
+          - source_labels: ['__meta_consul_service_metadata_name']
+            target_label: name
+          - source_labels: ['__meta_consul_service_metadata_iid']
+            target_label: iid
+          - source_labels: ['__meta_consul_service_metadata_mem']
+            target_label: mem
+          - source_labels: ['__meta_consul_service_metadata_itype']
+            target_label: itype
+          - source_labels: ['__meta_consul_service_metadata_ver']
+            target_label: ver
+          - source_labels: ['__meta_consul_service_metadata_exp']
+            target_label: exp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmagent
+  namespace: tensuns
+  labels:
+    app: vmagent
+spec:
+  selector:
+    matchLabels:
+      app: vmagent
+  template:
+    metadata:
+      labels:
+        app: vmagent
+    spec:
+      serviceAccountName: vmagent
+      containers:
+        - name: vmagent
+          #image: "victoriametrics/vmagent:latest"
+          image: "*-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/victoriametrics/vmagent:v1.116.0"
+          imagePullPolicy: IfNotPresent
+          # promscrape.config: 指定 Prometheus 格式的抓取配置文件路径
+          # promscrape.maxScrapeSize: 设置单个抓取请求的最大数据体积上限为 500MB。
+          # remoteWrite.disableOnDiskQueu: 禁用磁盘队列缓存
+          # remoteWrite.url=http://victoria-metrics.tensuns:8428/api/v1/write: 远程写入
+          args:
+            - -promscrape.config=/config/scrape.yml
+            - -remoteWrite.url=http://victoria-metrics.tensuns:8428/api/v1/write
+            - -promscrape.maxScrapeSize=500MB
+            - -remoteWrite.disableOnDiskQueue
+            - -loggerTimezone=Asia/Shanghai
+            #- -remoteWrite.dropSamplesOnOverload
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - name: http
+              containerPort: 8429
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          resources:
+            limits:
+              cpu: '2'
+              memory: 2Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: vmagent-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmagent
+  namespace: tensuns
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8429"
+spec:
+  selector:
+    app: vmagent
+  ports:
+    - name: http
+      port: 8429
+      targetPort: http
+  #type: NodePort
+  type: ClusterIP

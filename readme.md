@@ -1,4 +1,4 @@
-## Tensuns
+## Tensuns(consul-manager)
 参考文章： https://github.com/starsliao/TenSunS
 
 
