@@ -1,5 +1,7 @@
 ## Tensuns(consul-manager)
 参考文章： https://github.com/starsliao/TenSunS
+
+<img width="1244" height="502" alt="image" src="https://github.com/user-attachments/assets/792cfebc-549c-4015-8f2f-1616f28c1e42" />
 🦄概述
 后羿 - TenSunS(原ConsulManager)是一个使用Flask+Vue开发，基于Consul的WEB运维平台，弥补了Consul官方UI对Services管理的不足；并且基于Consul的服务发现与键值存储：实现了Prometheus自动发现多云厂商各资源信息；基于Blackbox对站点监控的可视化维护；以及对自建与云上资源的优雅管理与展示。
 
@@ -36,7 +38,7 @@
 功能开启即可采集最新30个漏洞列表。
 每小时采集一次，发现新漏洞立即推送到群机器人。
 支持企微、钉钉、飞书群机器人通知。
-<img width="1244" height="502" alt="image" src="https://github.com/user-attachments/assets/792cfebc-549c-4015-8f2f-1616f28c1e42" />
+
 
 
 #### 在tensuns自定义标签
