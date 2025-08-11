@@ -1,5 +1,7 @@
 ## Tensuns(consul-manager)
 参考文章： https://github.com/starsliao/TenSunS
+<img width="751" height="749" alt="image" src="https://github.com/user-attachments/assets/2315f39b-3df4-4790-8f8e-f4cb9b23696b" />
+
 
 
 ## VM全家桶
