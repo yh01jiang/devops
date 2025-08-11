@@ -2,7 +2,7 @@
 参考文章： https://github.com/starsliao/TenSunS
 
 
-## VM
+## VM全家桶
 
 参考文章： https://github.com/starsliao/VictoriaMetrics
 参考文章： https://mp.weixin.qq.com/s/K20YBZ7pIIEPcpRJx4Kg8A
