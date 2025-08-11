@@ -1,5 +1,40 @@
 ## Tensuns(consul-manager)
 参考文章： https://github.com/starsliao/TenSunS
+🦄概述
+后羿 - TenSunS(原ConsulManager)是一个使用Flask+Vue开发，基于Consul的WEB运维平台，弥补了Consul官方UI对Services管理的不足；并且基于Consul的服务发现与键值存储：实现了Prometheus自动发现多云厂商各资源信息；基于Blackbox对站点监控的可视化维护；以及对自建与云上资源的优雅管理与展示。
+
+🌈功能描述
+🎡1. Consul管理(比官方更优雅的Consul Web UI)
+支持Consul Services的增删改查，可以批量删除Service。
+直观的查看每个Services实例的信息，及整体Services的健康状态。
+可以便捷的对Services实例的Tags、Meta、健康检查配置管理与查询。
+💎2. 自建与云资源监控管理(ECS/RDS/Redis)
+基于Consul实现Prometheus监控目标的自动发现。
+
+✔当前已支持对接阿里云、腾讯云、华为云、AWS。
+
+⭐支持多云ECS/RDS/Redis的资源、分组、标签自动同步到Consul并接入到Prometheus自动发现！(并提供云资源信息查询与自定义页面)
+⭐支持多云ECS信息自动同步到JumpServer。
+⭐支持多云账户余额与云资源到期日设置阈值告警通知。
+⭐支持作为Exporter接入Prometheus：Prometheus增加TenSunS的JOB后可抓取云厂商的部分MySQL/Redis指标。(弥补原生Exporter无法获取部分云MySQL/Redis指标的问题)
+✔支持自建主机/MySQL/Redis接入WEB管理，支持增删改查、批量导入导出，自动同步到Consul并接入到Prometheus监控！
+
+✔提供了按需生成Prometheus配置与ECS/MySQL/Redis告警规则的功能。
+
+✔设计了多个支持同步的各字段展示的Node_Exporter、Mysqld_Exporter、Redis_Exporter Grafana看板。
+
+🚀3. 站点与接口监控管理
+基于Consul + Prometheus + Blackbox_Exporter实现站点的自动发现与监控。
+
+使用Web页面即可对监控目标增删改查，支持站点的分级分组查询管理。
+支持对监控目标的批量删除与批量导入，数据实时同步到Consul。
+提供了Blackbox的配置、Prometheus的配置以及Prometheus站点监控的告警规则。
+设计了一个支持各分级分组字段展示的Blackbox_Exporter Grafana看板。
+💫4. 高危漏洞采集与实时告警
+增加了高危风险漏洞采集与实时告警通知功能。
+功能开启即可采集最新30个漏洞列表。
+每小时采集一次，发现新漏洞立即推送到群机器人。
+支持企微、钉钉、飞书群机器人通知。
 <img width="1244" height="502" alt="image" src="https://github.com/user-attachments/assets/792cfebc-549c-4015-8f2f-1616f28c1e42" />
 
 
