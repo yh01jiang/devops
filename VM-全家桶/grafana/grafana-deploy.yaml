@@ -1,0 +1,94 @@
+# grafana.yaml
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: grafana-disk-pvc
+  namespace: tensuns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: alicloud-disk-essd
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: tensuns
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      volumes:
+        - name: grafana-storage
+          persistentVolumeClaim:
+            claimName: grafana-disk-pvc
+      #securityContext:
+      #  runAsUser: 0
+      initContainers:
+      - name: fix-permissions
+        image: *-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/busybox:1.31.1
+        command: ["sh", "-c", "chown -R 472:472 /var/lib/grafana"]
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+      containers:
+        - name: grafana
+          image: kerrysmart-registry-vpc.cn-shanghai.cr.aliyuncs.com/tools/grafana:11.6.3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: grafana
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin321
+          readinessProbe:
+            failureThreshold: 10
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 30
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 150m
+              memory: 512Mi
+            requests:
+              cpu: 150m
+              memory: 512Mi
+          volumeMounts:
+            - mountPath: /var/lib/grafana
+              name: grafana-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: tensuns
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+  selector:
+    app: grafana

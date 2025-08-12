@@ -1,1 +1,0 @@
-参考文章： https://github.com/oliver006/redis_exporter

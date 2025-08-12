@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: consul-ingress
+  namespace: tensuns
+spec:
+  tls:
+    - hosts:
+        - "barry-consul-web.****.com"
+      secretName: tls-****.com
+  rules:
+    - host: "barry-consul-web.****.com"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: consul
+                port:
+                  number: 8500

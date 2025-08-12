@@ -1,0 +1,23 @@
+# grafana-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  namespace: tensuns
+spec:
+  tls:
+    - hosts:
+        - "barry-gra.****.com"
+      secretName: tls-****.com
+  rules:
+  - host: barry-gra.****.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000
+
