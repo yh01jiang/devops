@@ -60,6 +60,10 @@ docker-compose配置方式是所有的mysql实例都配置了一样的mysql监�
 ## 五、参考Grafana看板
 GRAFANA：Mysqld Exporter Dashboard 22_11_01中文版
 
+Grafana 看板详情： 
+https://grafana.com/grafana/dashboards/17320
+Grafana 看板ID：17320
+
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8affa95d-bef8-43ef-a7ef-3acd3b4e0097" />
 
 
