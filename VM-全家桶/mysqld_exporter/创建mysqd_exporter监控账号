@@ -1,0 +1,13 @@
+mysql> CREATE USER 'monitoring'@'%'  IDENTIFIED BY 'Test#123';
+Query OK, 0 rows affected (0.09 sec)
+
+mysql> GRANT SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'monitoring'@'%';
+Query OK, 0 rows affected (0.01 sec)
+
+mysql> flush privileges;
+Query OK, 0 rows affected (0.02 sec)
+
+
+
+测试：
+mysql -h 192.168.1.1 -umonitoring -pTest#123
