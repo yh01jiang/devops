@@ -199,5 +199,11 @@ https://grafana.com/orgs/starsliao/dashboards
 
 
 
+🔗 相关链接
+https://mp.weixin.qq.com/s/K20YBZ7pIIEPcpRJx4Kg8A
+https://github.com/starsliao/TenSunS
+
+
+
 ✨点击跳转：完整的K8S与主机告警规则
 
