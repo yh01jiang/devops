@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mysql-exporter
+  name: mysql-exporter
+  namespace: kubesphere-monitoring-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-exporter
+  template:
+    metadata:
+      labels:
+        app: mysql-exporter
+    spec:
+      containers:
+      - name: mysql-exporter
+        image: /starsl.cn/mysqld_exporter:latest
+        command:
+          - /bin/mysqld_exporter
+        args:
+          - --collect.info_schema.innodb_metrics
+          - --collect.info_schema.tables
+          - --collect.info_schema.processlist
+          - --collect.info_schema.tables.databases=*
+          - --mysqld.username=monitoring
+        env:
+        - name: TZ
+          value: "Asia/Shanghai"
+        - name: MYSQLD_EXPORTER_PASSWORD
+          value: "Test#123"  ##数据库密码
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - name: http-metrics
+          containerPort: 9104
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mysql-exporter
+  name: mysql-exporter
+  namespace: kubesphere-monitoring-system
+spec:
+  ports:
+  - name: http-metirc
+    protocol: TCP
+    port: 9104
+    targetPort: 9104
+  selector:
+    app: mysql-exporter
