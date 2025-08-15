@@ -1,0 +1,80 @@
+cd /opt/vector/conf
+cat <<-EOF > vector.yaml
+timezone: "Asia/Shanghai"
+api:
+  enabled: true
+  address: "0.0.0.0:8686"
+EOF
+
+
+vim nginx-access.yaml
+sources:
+  01_file_nginx_access:
+    type: file
+    include:
+      - /nginx_logs/access.log  #nginx请求日志路径，其实这里就算是vector 容器中的路径了。
+transforms:
+  02_parse_nginx_access:
+    drop_on_error: true
+    reroute_dropped: true
+    type: remap
+    inputs:
+      - 01_file_nginx_access
+    source: |
+      .message = string!(.message)
+      if contains(.message,"\\x") { .message = replace(.message, "\\x", "\\\\x") }
+      . = parse_json!(.message)
+      .createdtime = to_unix_timestamp(now(), unit: "milliseconds")
+      .timestamp = to_unix_timestamp(parse_timestamp!(.timestamp , format: "%+"), unit: "milliseconds")
+      .url_list = split!(.url, "?", 2)
+      .path = .url_list[0]
+      .query = .url_list[1]
+      .path_list = split!(.path, "/", 3)
+      if length(.path_list) > 2 {.top_path = join!(["/", .path_list[1]])} else {.top_path = "/"}
+      .duration = round(((to_float(.responsetime) ?? 0) - (to_float(.upstreamtime) ?? 0)) ?? 0,3)
+      if .xff == "-" { .xff = .remote_ip }
+      .client_ip = split!(.xff, ",", 2)[0]
+      .ua = parse_user_agent!(.http_user_agent , mode: "enriched")
+      .client_browser_family = .ua.browser.family
+      .client_browser_major = .ua.browser.major
+      .client_os_family = .ua.os.family
+      .client_os_major = .ua.os.major
+      .client_device_brand = .ua.device.brand
+      .client_device_model = .ua.device.model
+      .geoip = get_enrichment_table_record("geoip_table", {"ip": .client_ip}) ?? {"city_name":"unknown","region_name":"unknown","country_name":"unknown"}
+      .client_city = .geoip.city_name
+      .client_region = .geoip.region_name
+      .client_country = .geoip.country_name
+      .client_latitude = .geoip.latitude
+      .client_longitude = .geoip.longitude
+      del(.path_list)
+      del(.url_list)
+      del(.ua)
+      del(.geoip)
+      del(.url)
+sinks:
+  03_ck_nginx_access:
+    type: clickhouse
+    inputs:
+      - 02_parse_nginx_access
+    endpoint: http://主机ip地址:8123  #clickhouse http接口
+    database: nginxlogs  #clickhouse 库
+    table: nginx_access  #clickhouse 表
+    auth:
+      strategy: basic
+      user: default  #clickhouse 库
+      password: GlWszBQp  #clickhouse 密码
+    compression: gzip
+  04_out_nginx_dropped:
+    type: file
+    inputs:
+      - 02_parse_nginx_access.dropped
+    path: /tmp/access_vector_error.log  #解析异常的日志
+    encoding:
+      codec: json
+enrichment_tables:
+  geoip_table:
+    path: "/etc/vector/GeoLite2-City.mmdb"
+    type: geoip
+    locale: "zh-CN"
+

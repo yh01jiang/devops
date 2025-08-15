@@ -1,0 +1,11 @@
+
+mkdir data
+docker run -d -p 3000:3000 --name=grafana \
+  --user "$(id -u)" \  
+  --volume "$PWD/data:/var/lib/grafana" \
+  grafana/grafana-enterprise  
+
+将要安装的插件作为逗号分隔列表传递给带有GF_INSTALL_PLUGINS环境变量的Docker
+docker run -d -p 3000:3000 --name=grafana \
+  -e "GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource" \  
+  grafana/grafana-enterprise

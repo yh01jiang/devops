@@ -1,0 +1,21 @@
+mkdir -p /opt/vector/conf
+cd /opt/vector
+touch access_vector_error.log
+wget https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-City.mmdb
+cat <<-EOF > docker-compose.yaml
+services:
+  vector:
+    image: registry.cn-shenzhen.aliyuncs.com/starsl/vector:0.41.1-alpine
+    container_name: vector
+    hostname: vector
+    restart: always
+    entrypoint: vector --config-dir /etc/vector/conf 
+    ports:
+      - 8686:8686
+    volumes:
+      - /var/log/nginx:/nginx_logs  # 这是需要采集的日志的路径需要挂载到容器内
+      - /opt/vector/access_vector_error.log:/tmp/access_vector_error.log
+      - /opt/vector/GeoLite2-City.mmdb:/etc/vector/GeoLite2-City.mmdb
+      - /opt/vector/conf:/etc/vector/conf
+      - /usr/share/zoneinfo/PRC:/etc/localtime
+EOF

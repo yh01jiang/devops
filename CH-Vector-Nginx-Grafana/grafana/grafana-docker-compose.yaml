@@ -1,0 +1,35 @@
+grafana:
+  image: grafana/grafana:latest
+  container_name: grafana
+  ports:
+    - "3000:3000"  # Grafana web UI端口
+  volumes:
+    - ./data/grafana:/var/lib/grafana  # 数据持久化存储
+  environment:
+    # 设置管理员admin用户的初始密码
+    GF_SECURITY_ADMIN_PASSWORD: "admin"
+    
+    # 启用 Grafana 的 Explore 功能
+    GF_EXPLORE_ENABLED: "true"
+    
+    # 安装 Grafana 插件
+    GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-mqtt-datasource,tdengine-datasource,yesoreyeram-infinity-datasource"
+    
+    # 配置默认界面语言
+    GF_VIEWER_LANGUAGE: "zh-Hans"
+    
+    # 启用匿名访问
+    GF_AUTH_ANONYMOUS_ENABLED: "true"
+    GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"  # 匿名用户角色设置
+    
+    # 允许嵌入 Grafana 面板到其他网页
+    GF_SECURITY_ALLOW_EMBEDDING: "true"
+    
+    # 配置根 URL
+    GF_SERVER_ROOT_URL: "http://${HOST}/grafana/home/"
+    
+    # 设置默认主题为 light
+    GF_USERS_DEFAULT_THEME: "light"
+
+
+

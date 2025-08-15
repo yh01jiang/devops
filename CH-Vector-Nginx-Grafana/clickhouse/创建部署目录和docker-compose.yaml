@@ -1,0 +1,18 @@
+mkdir -p /opt/clickhouse/etc/clickhouse-server/{config.d,users.d}
+cd /opt/clickhouse
+cat <<-EOF > docker-compose.yaml
+services:
+  clickhouse:
+    image: registry.cn-shenzhen.aliyuncs.com/starsl/clickhouse-server:23.4
+    container_name: clickhouse
+    hostname: clickhouse
+    volumes:
+      - /opt/clickhouse/logs:/var/log/clickhouse-server
+      - /opt/clickhouse/data:/var/lib/clickhouse
+      - /opt/clickhouse/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - /opt/clickhouse/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - /usr/share/zoneinfo/PRC:/etc/localtime
+    ports:
+      - 8123:8123
+      - 9000:9000
+EOF
