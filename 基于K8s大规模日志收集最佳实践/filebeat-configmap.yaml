@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: ops-monit
+  labels:
+    k8s-app: filebeat
+data:
+  filebeat.yml: |-
+    filebeat.inputs:
+    - type: log  # 文件日志
+      paths:
+        - /var/lib/kubelet/pods/*/volumes/kubernetes.io~empty-dir/**/*.log  # 默认empty-dir在节点主机的路径
+      exclude_files: ['.*access.*'] # 可以排除某些文件名
+      multiline.type: pattern  # 多行日志匹配
+      multiline.pattern: ^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}
+      multiline.negate: true
+      multiline.match: after
+      fields: # 增加字段
+        logtype: java-file
+        env: f2b-gamma
+      processors:
+      - add_kubernetes_metadata: # 增加K8S元数据
+          indexers:
+            - pod_uid:
+          matchers:
+            - logs_path:
+                logs_path: '/var/lib/kubelet/pods/'
+                resource_type: 'pod'
+
+    - type: container # 采集容器标准输出
+      paths:
+        - /var/log/containers/*_f2b_*node*.log # 默认标准输出在节点主机的路径
+      fields: # 增加字段
+        logtype: json-std
+        env: f2b-gamma
+      processors:
+      - add_kubernetes_metadata: # 增加K8S元数据
+          matchers:
+            - logs_path:
+                logs_path: /var/log/containers
+
+    output.kafka: # 输出到KAFKA
+      hosts: ["10.1.230.152:9092", "10.1.227.35:9092", "10.1.247.50:9092"]
+      topic: 'topic-gamma-logs'
+      max_message_bytes: 10000000
+      partition.round_robin:
+        reachable_only: false

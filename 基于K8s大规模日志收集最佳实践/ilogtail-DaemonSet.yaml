@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ilogtail-ds
+  namespace: ops-monit
+  labels:
+    k8s-app: logtail-ds
+spec:
+  selector:
+    matchLabels:
+      k8s-app: logtail-ds
+  template:
+    metadata:
+      labels:
+        k8s-app: logtail-ds
+    spec:
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: logtail
+          command:
+          - /usr/local/ilogtail/ilogtail_control.sh
+          args:
+          - "start_and_block"
+          - "-enable_containerd_upper_dir_detect=true"
+          - "-dirfile_check_interval_ms=5000"
+          - "-logtail_checkpoint_check_gc_interval_sec=120"
+          env:
+            - name: _node_name_
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: _node_ip_
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.hostIP
+            - name: cpu_usage_limit
+              value: "1"
+            - name: mem_usage_limit
+              value: "512"
+          image: >-
+            sls-opensource-registry.cn-shanghai.cr.aliyuncs.com/ilogtail-community-edition/ilogtail:latest
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 40m
+              memory: 38Mi
+          volumeMounts:
+            - mountPath: /var/run
+              name: run
+            - mountPath: /logtail_host
+              mountPropagation: HostToContainer
+              name: root
+              readOnly: true
+            - mountPath: /usr/local/ilogtail/checkpoint
+              name: checkpoint
+            - mountPath: /usr/local/ilogtail/config/local
+              name: user-config
+              readOnly: true
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      volumes:
+        - hostPath:
+            path: /var/run
+            type: Directory
+          name: run
+        - hostPath:
+            path: /
+            type: Directory
+          name: root
+        - hostPath:
+            path: /etc/ilogtail-ilogtail-ds/checkpoint
+            type: DirectoryOrCreate
+          name: checkpoint
+        - configMap:
+            defaultMode: 420
+            name: ilogtail-user-cm
+          name: user-config

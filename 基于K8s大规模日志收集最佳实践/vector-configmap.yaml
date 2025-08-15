@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector
+  namespace: ops-monit
+data:
+  global.toml: |
+    data_dir = "/vector-data-dir"
+    timezone = "Asia/Shanghai"
+    [api]
+      address = "0.0.0.0:8686"
+      enabled = true
+
+  prod-java-file-ilogtail.toml: |-  # java业务日志入库ES(toml格式配置文件写法)
+    [sources.1kafka_java_ilogtail]
+      type = "kafka"
+      bootstrap_servers = "10.0.100.1:9092,10.0.100.2:9092,10.0.100.3:9092"
+      group_id = "prod-java-file-ilogtail"
+      topics = [ "prod-java-file-ilogtail" ]
+      decoding.codec = "json"
+      commit_interval_ms = 1000
+
+    [transforms.2parse_java_all_ilogtail]
+    inputs = ["1kafka_java_ilogtail"]
+    type = "remap"
+    source = '''
+      .namespace = .tags.namespace
+      .podname = .tags.pod_name
+      .nodename = .tags.node_name
+      .appname = .tags.appname
+      .deployimage = .tags.deployimage
+      # java日志使用正则解析,获取时间和日志级别字段即可,并保留原始日志.
+      . |= parse_regex!(.fields.content, r'^(?P<time>\d+-\d+-\d+ \d+:\d+:\d+,\d+)(\s|:)+(?P<level>\S+)(\S|\s)*$')
+    '''
+
+    [transforms.3delfields_java_ilogtail]
+    inputs = ["2parse_java_all_ilogtail"]
+    type = "remap"
+    source = '''
+    .unix_time, err = to_int(format_timestamp!(.timestamp, format: "%s"))
+    .utc8_time = .unix_time + 28800
+    .index_day = format_timestamp!(to_timestamp!(.utc8_time), "%Y.%m.%d")
+    .path = .tags.path
+    del(.unix_time)
+    del(.utc8_time)
+    del(.tags)
+    .message = del(.fields.content)
+    del(.topic)
+    del(.offset)
+    del(.partition)
+    del(.message_key)
+    del(.source_type)
+    del(.fields.__file_offset__)
+    .@timestamp = parse_timestamp(.time, format: "%F %T,%3f") ?? now()
+    .captime = del(.timestamp)
+    del(.time)
+    ns, err = string(.namespace)
+    if err != null {
+      .namespace = "null"
+    }
+    '''
+
+    [sinks.9es_java_ilogtail]
+      type = "elasticsearch"
+      inputs = ["3delfields_java_ilogtail"]
+      endpoint = "http://10.1.72.33:19200"
+      auth.strategy = "basic"
+      auth.user = "elastic"
+      auth.password = "M1k2wl2Ig4A"
+      mode = "bulk"
+      buffer.max_events = 50000
+      batch.max_events = 50000
+      batch.timeout_secs = 5
+      bulk.index = "hwprod-java-file-{{ namespace }}-{{ index_day }}"
+
+  istio.yaml: |-  # istio请求日志入库ClickHouse(yaml格式配置文件写法)
+    sources:
+      01_kafka_hwprod_istio:
+        type: "kafka"
+        bootstrap_servers: "kafka1:9092,kafka2:9092,kafka3:9092"
+        group_id: "hwprod_istio"
+        topics: [ "prod-istio-std" ]
+        decoding:
+          codec: "json"
+        commit_interval_ms: 1000
+    
+    transforms:
+      02_parse_hwprod_istio:
+        drop_on_error: true
+        reroute_dropped: true
+        type: remap
+        inputs:
+          - 01_kafka_hwprod_istio
+        source: |
+          # json日志直接解析json,即可获取所有字段.
+          . = parse_json!(.contents.content)
+          .start_time = to_unix_timestamp(parse_timestamp!(.start_time, format: "%+"),unit: "milliseconds")
+          .upstream_service_time = to_int!(.upstream_service_time)
+    
+    sinks:
+      03_ck_hwprod_istio:
+        type: clickhouse
+        inputs:
+          - 02_parse_hwprod_istio
+        database: istiologs
+        endpoint: http://10.7.0.226:28123
+        table: hwprod_istio_local
+        compression: gzip
+      04_out_istio_dropped:
+        type: blackhole
+        inputs:
+          - 02_parse_hwprod_istio.dropped

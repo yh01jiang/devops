@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ilogtail-user-cm
+  namespace: ops-monit
+data:
+  nginx_stdout.yaml: |
+    enable: true
+    inputs:
+      - Type: service_docker_stdout  # 采集K8S容器标准输出
+        Stdout: true
+        Stderr: false
+        K8sNamespaceRegex: "^istio-system$"  # 指定命名空间
+        IncludeK8sLabel:
+          app: istio-ingressgateway  # 指定需要匹配的标签
+    flushers:
+      - Type: flusher_kafka_v2
+        Brokers:
+          - ops-log1.kafka.casstime.com:9092
+          - ops-log2.kafka.casstime.com:9092
+          - ops-log3.kafka.casstime.com:9092
+        Topic: prod-istio-std
+        MaxMessageBytes: 10000000
+
+#接上面的配置，支持在一个configmap中有多个配置文件。
+  java_file.yaml: |
+    enable: true
+    inputs:
+      - Type: input_file
+        FilePaths:
+          - /opt/logs/*.log  # 指定容器内的日志路径
+        EnableContainerDiscovery: true  # 表示采集容器内的文件日志
+        ExcludeFiles:
+          - access.*  # 需要排除的文件名
+        ContainerFilters:
+          ExcludeK8sLabel:
+            app: pod-agentbuy-service  # 可排除包含某些标签的容器
+        Multiline:
+          StartPattern: \d+-\d+-\d+.* # 匹配多行日志开头的正则
+        AppendingLogPositionMeta: true # 添加采集文件的元信息
+    processors:
+      - Type: processor_add_fields # 增加字段
+        Fields: 
+          logtype: java-file
+          env: cassmall
+    flushers:
+      - Type: flusher_kafka_v2
+        Brokers:
+          - cassops-log1.kafka.casstime.com:9092
+          - cassops-log2.kafka.casstime.com:9092
+          - cassops-log3.kafka.casstime.com:9092
+        Topic: 	prod-java-file-ilogtail
+        MaxMessageBytes: 10000000
+        Convert:
+          TagFieldsRename:  # 对K8S元数据的字段名重命名
+            k8s.pod.name: 'pod_name'
+            k8s.node.name: 'node_name'
+            k8s.namespace.name: 'namespace'
+            container.image.name: 'deployimage'
+            log.file.path: 'path'

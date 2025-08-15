@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ilogtail-user-cm
+  namespace: ops-monit
+data:
+  java_std_es8.yaml: |
+    enable: true
+    inputs:
+      - Type: service_docker_stdout
+        Stderr: true
+        Stdout: true
+        BeginLineCheckLength: 10
+        BeginLineRegex: "\\d+-\\d+-\\d+.*"  # JAVA多行日志开头匹配正则
+        K8sNamespaceRegex: "^(saas-prod)$"
+    processors:
+      - Type: processor_string_replace  # 如果日志的标准输出有颜色,可以使用此正则替换掉
+        SourceKey: content
+        Method: regex
+        Match: \[\d*\;*\d*m|\\u001b
+        ReplaceString: ''
+      - Type: processor_regex  # JAVA日志处理：只从日志中提取时间和级别字段，并保留源。
+        SourceKey: content
+        Regex: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) .*?[0-9a-z]*([A-Z]+) 
+        Keys:
+          - log_time
+          - level
+        KeepSource: true
+      - Type: processor_gotime  # 日志中的时间字段转成ES中@timestamp标准日期时间格式。
+        SourceKey: "log_time"
+        SourceFormat: "2006-01-02 15:04:05,000"
+        SourceLocation: 8
+        DestKey: "@timestamp"
+        DestFormat: "2006-01-02T15:04:05.000Z"
+        DestLocation: 0
+        SetTime: false
+        KeepSource: false
+      - Type: processor_rename  # 字段重命名
+        SourceKeys: 
+          - _time_
+          - _source_
+        DestKeys:
+          - cap_time
+          - log_src
+    flushers:
+      #- Type: flusher_stdout
+      #  OnlyStdout: true
+      - Type: flusher_elasticsearch
+        Addresses: 
+          - http://10.26.6.152:9200
+          - http://10.26.6.153:9200
+          - http://10.26.6.154:9200
+        Convert:
+          Protocol: custom_single_flatten  # 数据字段做一级打平
+          Encoding: json
+        Index: java-logs-%{tag.k8s.namespace.name}_%{+yyyy.MM.dd}
+        Authentication:
+          PlainText:
+            Username: ilogtail1
+            Password: fSdgDh4jfg
+        HTTPConfig:
+            MaxIdleConnsPerHost: 10
+            ResponseHeaderTimeout: Second
