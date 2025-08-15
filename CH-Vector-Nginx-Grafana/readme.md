@@ -89,7 +89,7 @@ services:
       - 9000:9000
 EOF
 ```
-⚙️ #### 配置主文件
+#### ⚙️  配置主文件
 ```xml
 vim /opt/clickhouse/etc/clickhouse-server/config.d/config.xml
 <clickhouse replace="true">
@@ -116,7 +116,7 @@ vim /opt/clickhouse/etc/clickhouse-server/config.d/config.xml
 
 ```
 
-⚙️ #### 配置用户文件
+#### ⚙️ 配置用户文件
 ```xml
 PASSWORD=$(base64 < /dev/urandom | head -c8); echo "$PASSWORD"; echo -n "$PASSWORD" | sha256sum | tr -d '-'
 VGK7aP/z
@@ -470,7 +470,13 @@ NGINX 异常请求分析
 
 
 🔗 ## 参考文档
+
+
 https://mp.weixin.qq.com/s/6VSwFCfK0G_QQUjMnLs9Dw
+
+
+https://www.p-pp.cn/ch_vector%E6%89%93%E9%80%A0%E6%9C%80%E5%BC%BAgrafana%E6%97%A5%E5%BF%97%E5%88%86%E6%9E%90/
+
 
 
 
