@@ -432,10 +432,45 @@ docker restart grafana
 
 ## 增加数据源
 
+<img width="1802" height="1963" alt="image" src="https://github.com/user-attachments/assets/bc0c17a3-ce26-4cbe-9cd0-3813c8c2fefa" />
+
+<img width="1087" height="950" alt="image" src="https://github.com/user-attachments/assets/c69cb2e5-caf9-45e1-9646-62f0dc301a2b" />
+<img width="845" height="943" alt="image" src="https://github.com/user-attachments/assets/bc1cb5c8-3cf1-4b6f-8e1c-b5b30791726c" />
+
+
 
 
 导入看板
+<img width="1175" height="923" alt="image" src="https://github.com/user-attachments/assets/545a5b10-a90c-45cf-bbdc-27de4ab1948e" />
 
+
+## 📊 Grafana 请求日志分析看板预览
+该看板是基于 ClickHouse + Vector 的 NGINX 请求日志分析看板。包括请求与耗时分析、异常请求分析、用户分析、地理位置分布图、指定接口分析、请求日志明细。
+
+尤其在异常请求分析方面，总结多年异常请求分析经验，从各个角度设计大量异常请求的分析图表。
+
+整体请求与耗时分析
+<img width="1080" height="789" alt="image" src="https://github.com/user-attachments/assets/110f8a3b-9669-4ada-880a-e98353eb1719" />
+
+NGINX 异常请求分析
+![](./NGINX 异常请求分析.png)
+
+用户请求数据分析
+<img width="1080" height="591" alt="image" src="https://github.com/user-attachments/assets/a84be847-ace4-488c-879d-ff84784eed05" />
+
+地理位置数据分析
+<img width="1080" height="767" alt="image" src="https://github.com/user-attachments/assets/013fcd24-cb1e-4555-9209-8b0dd9005c56" />
+
+指定接口明细分析
+<img width="1080" height="789" alt="image" src="https://github.com/user-attachments/assets/1b0daeaa-a5bb-4b62-9cc3-a103869a02c4" />
+
+请求日志详情分析
+
+<img width="1080" height="691" alt="image" src="https://github.com/user-attachments/assets/3c02485d-3c3b-4f5c-8eac-61909230c54d" />
+
+
+🔗 ## 参考文档
+https://mp.weixin.qq.com/s/6VSwFCfK0G_QQUjMnLs9Dw
 
 
 
