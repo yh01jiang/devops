@@ -18,6 +18,12 @@ NGINX日志分析Grafana看板。
 <img width="939" height="384" alt="image" src="https://github.com/user-attachments/assets/2a0d50b5-e506-4bd9-bd30-e9ce61b27509" />
 
 
+<img width="742" height="343" alt="image" src="https://github.com/user-attachments/assets/6ad4b964-f822-4940-ba11-c5a952122253" />
+
+## 钉钉机器人截图关键字设置
+<img width="681" height="548" alt="image" src="https://github.com/user-attachments/assets/a55834c1-3b5d-4450-a5a6-72805a2b3301" />
+
+
 ## 🔧  代码详解
 
 ```python
@@ -40,6 +46,7 @@ alarm_threshold = 10  # 5xx异常次数阈值
 rt_threshold = 100  # RT延迟告警阀值(毫秒)
 check_interval = 1  # 检查时间间隔(分钟)
 group_token = 'fd10a-98811'  # 群机器人token
+dingding_token = '234a9614******************'  # 群机器人token
 
 ## 企微应用推送的信息
 corp_id = "wx34xxxxxx"  # 企微的公司corp_id
@@ -273,7 +280,8 @@ for table in tables:
                     f"- [【屏蔽】]({silence_url})【当前时段总5XX：{rowsnum}】\n"
                 )
                 print(md)
-                wecom_group(md, group_token)
+                dingding(md, dingding_token)  # 修改为钉钉报警
+                # wecom_group(md, group_token) # 企微报警
                 # wecom_app(md, touser)
 # 断开ClickHouse数据库连接
 ckclient.disconnect()
