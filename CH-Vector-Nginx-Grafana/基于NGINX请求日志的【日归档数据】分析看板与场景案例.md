@@ -139,6 +139,11 @@ https://StarsL.cn/kubedoor/nginx-daily2ch-grafana.json
 ```py
 wget https://StarsL.cn/kubedoor/nginx-daily2ch.zip
 # 编辑 .env文件，修改ClickHouse数据库配置
+export CLICKHOUSE_HOST=172.29.*.*
+export CLICKHOUSE_PORT=9000
+export CLICKHOUSE_DATABASE=nginxlogs
+export CLICKHOUSE_USER=default
+export CLICKHOUSE_PASSWORD=VGK7aP/z
 python3 main.py  #初始化历史数据
 # 配置crontab 定时运行，每天凌晨采集前一天数据
 30 0 * * * cd /opt/nginx-daily2ch && python3 main
