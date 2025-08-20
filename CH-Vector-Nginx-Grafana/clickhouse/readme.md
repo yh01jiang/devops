@@ -192,7 +192,7 @@ sudo systemctl start clickhouse-keeper
 </clickhouse>
 /etc/clickhouse-server/users.d
 ```
-**custom.xml（3台服务器）**
+* **custom.xml（3台服务器）**
 
 ```xml
 <clickhouse>
