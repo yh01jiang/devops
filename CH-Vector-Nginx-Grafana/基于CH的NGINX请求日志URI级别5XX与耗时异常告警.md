@@ -1,4 +1,4 @@
-<img width="716" height="445" alt="image" src="https://github.com/user-attachments/assets/baa2cd03-bc31-4e16-8188-5a8dd3c3502e" />上篇文章我们已经把NGINX请求日志写入到了ClickHouse，并实现了一个基于CH数据源的
+上篇文章我们已经把NGINX请求日志写入到了ClickHouse，并实现了一个基于CH数据源的
 NGINX日志分析Grafana看板。
 这次我们编写了一个Python脚本来实现对NGINX日志在URI级别的5XX与整体耗时异常的告
 警通知功能。
