@@ -281,6 +281,13 @@ ckclient.disconnect()
 
 ```
 
+## 运行
+配置crontab运行，每分钟一次
+
+```bash
+* * * * * bash /opt/monit/ch-nginx-alert.py
+
+```
 
 🔗 相关链接
 https://mp.weixin.qq.com/s?__biz=MzAwNzQ3MDIyMA==&mid=2247485493&idx=1&sn=d24117ad5b650aa85e3e980b8a0b31bf&chksm=9b7ce5d6ac0b6cc03d93419dd3e7644d643ad213000fd2f85034049883429d409094d0bd590f&scene=178&cur_album_id=3669478369130889224&search_click_id=#rd
