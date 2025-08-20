@@ -140,7 +140,7 @@ sudo apt-get install -y clickhouse-keeper || sudo yum install -y clickhouse-keep
 sudo systemctl enable clickhouse-keeper
 sudo systemctl start clickhouse-keeper
 ```
-**keeper.xml（3台服务器）**
+* **keeper.xml（3台服务器）**
 
 ```xml
 <clickhouse>
@@ -245,7 +245,7 @@ ENGINE = MergeTree PRIMARY KEY id;
 CREATE TABLE test.test_all ON CLUSTER opslogsch as test.test_local ENGINE = Distributed(opslogsch,test,test_local,rand());
 ```
 #### 写本地表
-``sql
+```sql
 INSERT INTO test.test_local (id,aa,bb)values(1,'a1','b1');
 INSERT INTO test.test_local (id,aa,bb)values(1,'a2','b2');
 INSERT INTO test.test_local (id,aa,bb)values(1,'a3','b3');
@@ -274,8 +274,6 @@ Grafana增加ClickHouse数据源后
 ## 即可直接导入CH监控看板
 
 <img width="724" height="472" alt="image" src="https://github.com/user-attachments/assets/6551380c-a468-4f8b-a669-bb139dcc0cea" />
-
-
 
 
 
