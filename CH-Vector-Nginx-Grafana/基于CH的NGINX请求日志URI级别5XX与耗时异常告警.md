@@ -1,4 +1,4 @@
-上篇文章我们已经把NGINX请求日志写入到了ClickHouse，并实现了一个基于CH数据源的
+<img width="716" height="445" alt="image" src="https://github.com/user-attachments/assets/baa2cd03-bc31-4e16-8188-5a8dd3c3502e" />上篇文章我们已经把NGINX请求日志写入到了ClickHouse，并实现了一个基于CH数据源的
 NGINX日志分析Grafana看板。
 这次我们编写了一个Python脚本来实现对NGINX日志在URI级别的5XX与整体耗时异常的告
 警通知功能。
@@ -296,6 +296,16 @@ ckclient.disconnect()
 * * * * * bash /opt/monit/ch-nginx-alert.py
 
 ```
+
+## 测试验证nginx返回500
+
+<img width="716" height="445" alt="image" src="https://github.com/user-attachments/assets/df296295-413c-41ed-a3db-0b13ef2cb6f4" />
+
+```bash
+while true; do curl -I http://barry-ng.****.com;sleep 3;done
+
+```
+
 
 🔗 相关链接
 https://mp.weixin.qq.com/s?__biz=MzAwNzQ3MDIyMA==&mid=2247485493&idx=1&sn=d24117ad5b650aa85e3e980b8a0b31bf&chksm=9b7ce5d6ac0b6cc03d93419dd3e7644d643ad213000fd2f85034049883429d409094d0bd590f&scene=178&cur_album_id=3669478369130889224&search_click_id=#rd
