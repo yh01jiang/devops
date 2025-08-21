@@ -99,6 +99,7 @@ def wecom_group(md, token, at=''):
     print(f'【wecom】{response.json()}')
 
 
+# 钉钉报警
 def dingding(md,token):
     webhook = f'https://oapi.dingtalk.com/robot/send?access_token={token}'
     headers = {'Content-Type': 'application/json'}
@@ -107,6 +108,8 @@ def dingding(md,token):
     response = requests.post(webhook, headers=headers, data=data)
     print(f'【dingding】{response.json()}')
 
+
+# 飞书报警
 def feishu(md,token):
     title = "告警通知"
     webhook = f'https://open.feishu.cn/open-apis/bot/v2/hook/{token}'
