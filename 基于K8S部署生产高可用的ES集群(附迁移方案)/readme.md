@@ -2,6 +2,8 @@
 ## 🌈 ECK简介
 https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 
+🔗 相关链接: https://mp.weixin.qq.com/s?__biz=MzAwNzQ3MDIyMA==&mid=2247485407&idx=1&sn=49607c98662473de2cf3bd5fdbcac6bb&chksm=9b7cea3cac0b632a72ad4eda42eaae202da7e58dfd5b9a9417d4bbeb1c8cca0f2e50502c6c41&scene=178&cur_album_id=3669478369130889224&search_click_id=#rd
+
 Elastic Cloud on Kubernetes (ECK) 是一个官方提供的用于在 Kubernetes 集群中简化部署、管理和操作 Elastic Stack（包括 Elasticsearch 和 Kibana）的扩展。
 
 ### ✨ ECK 是一个 Kubernetes Operator，它管理和自动化 Elastic Stack 的生命周期。通过使用 ECK，可以在 Kubernetes 环境中快速实现以下功能：
