@@ -77,7 +77,7 @@ helm install kafka bitnami/kafka -f kafka.yaml
 ```
 
 ## 📌 调用
-### * K8S内部访问
+### K8S内部访问
 ```bash
 kafka-controller-headless.default:9092
 
@@ -86,7 +86,7 @@ kafka-controller-1.kafka-controller-headless.default:9092
 kafka-controller-2.kafka-controller-headless.default:9092
 ```
 
-### * K8S外部访问
+### K8S外部访问
 ```bash
 # node ip +设置的nodeport端口,注意端口对应的节点的ip
 10.118.70.93:30091    
@@ -97,7 +97,7 @@ kubectl exec -it kafka-controller-0 -- cat /opt/bitnami/kafka/config/server.prop
 ```
 
 ## 🌈 测试
-### * 创建测试pod
+### 创建测试pod
 ```bash
 kubectl run kafka-client --restart='Never' --image registry.cn-shenzhen.aliyuncs.com/starsl/kafka:3.8 --namespace default --command -- sleep infinity
 ```
