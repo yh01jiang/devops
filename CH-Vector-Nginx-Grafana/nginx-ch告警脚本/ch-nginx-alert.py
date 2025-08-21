@@ -169,7 +169,8 @@ for table in tables:
             f'## <font color="#ff0000">【{table}】</font>\n'
             f'- 最近1分钟HTTP200平均响应时间：<font color="#ff0000">{rt}ms</font>\n'
         )
-        wecom_group(rtmd, group_token)
+        dingding(md, dingding_token)  # 修改为钉钉报警
+        #wecom_group(rtmd, group_token)
         # wecom_app(rtmd, touser)
 
     if rows:
