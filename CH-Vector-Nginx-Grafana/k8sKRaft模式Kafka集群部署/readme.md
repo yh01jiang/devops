@@ -1,6 +1,6 @@
 # 🚀 扔掉Zookeeper！在K8S中运行KRaft模式Kafka集群
 
-**从3.3.1开始，KRaft模式生产可用，使用KRaft模式的Kafka,不再需要维护Zookeeper。**
+**✨ 从3.3.1开始，KRaft模式生产可用，使用KRaft模式的Kafka,不再需要维护Zookeeper。**
 
 # 🔧 部署方案
 
@@ -96,7 +96,7 @@ kafka-controller-2.kafka-controller-headless.default:9092
 kubectl exec -it kafka-controller-0 -- cat /opt/bitnami/kafka/config/server.properties | grep advertised.listeners
 ```
 
-## 测试
+## 🌈 测试
 ### * 创建测试pod
 ```bash
 kubectl run kafka-client --restart='Never' --image registry.cn-shenzhen.aliyuncs.com/starsl/kafka:3.8 --namespace default --command -- sleep infinity
