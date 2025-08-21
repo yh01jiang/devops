@@ -25,7 +25,7 @@ Elastic Cloud on Kubernetes (ECK) 是一个官方提供的用于在 Kubernetes �
 
 * Logstash: 8.7+
 
-## 部署 operator
+## ⚙️ 部署 operator
 ```bash
 kubectl create -f https://download.elastic.co/downloads/eck/2.14.0/crds.yaml
 kubectl apply -f https://download.elastic.co/downloads/eck/2.14.0/operator.yaml
