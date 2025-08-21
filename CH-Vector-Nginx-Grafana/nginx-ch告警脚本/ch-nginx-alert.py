@@ -18,6 +18,8 @@ rt_threshold = 100  # RT延迟告警阀值(毫秒)
 check_interval = 1  # 检查时间间隔(分钟)
 group_token = 'fd10a-98811'  # 群机器人token
 
+dingding_token = '234a961429ba653638a2d90d942b4fa7560671df1f8cf8622ad3b9af7403ad63'  # 群机器人token
+
 ## 企微应用推送的信息
 corp_id = "wx34xxxxxx"  # 企微的公司corp_id
 secret = "4kUHzGZghjltrWTpac"  # 企微应用的secret
@@ -250,7 +252,8 @@ for table in tables:
                     f"- [【屏蔽】]({silence_url})【当前时段总5XX：{rowsnum}】\n"
                 )
                 print(md)
-                wecom_group(md, group_token)
+                dingding(md, dingding_token)  # 修改为钉钉报警
+                #wecom_group(md, group_token)
                 # wecom_app(md, touser)
 # 断开ClickHouse数据库连接
 ckclient.disconnect()
