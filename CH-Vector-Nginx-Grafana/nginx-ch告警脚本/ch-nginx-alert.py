@@ -4,7 +4,7 @@ from clickhouse_driver import Client
 from datetime import datetime, timedelta
 
 # ClickHouse数据库连接信息
-CK_HOST = "10.7.0.226"
+CK_HOST = "172.29.36.107"
 CK_PORT = 9000  # ClickHouse TCP端口
 CK_USER = "default"
 CK_PASSWORD = ""
@@ -12,11 +12,11 @@ CK_DATABASE = "nginxlogs"  # ClickHouse nginx请求日志所在的数据库
 tables = ["cassmall_hwprod_nginx_access", "smart_hwprod_nginx_access"]  # 存放access日志的表
 
 # Alertmanager和告警相关配置
-alertmanager_url = "http://10.0.0.26:9095"  # Alertmanager地址
+alertmanager_url = "http://主机:9095"  # Alertmanager地址
 alarm_threshold = 10  # 5xx异常次数阈值
 rt_threshold = 100  # RT延迟告警阀值(毫秒)
 check_interval = 1  # 检查时间间隔(分钟)
-group_token = 'fd10a-98811'  # 群机器人token
+group_token = '234a961429ba653638a2d90d***********************'  # 群机器人token
 
 dingding_token = '234a961429ba653638a2d90d***********************'  # 群机器人token
 
