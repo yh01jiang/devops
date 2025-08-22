@@ -75,3 +75,6 @@ sinks:
 <img width="1912" height="711" alt="image" src="https://github.com/user-attachments/assets/f5095eed-009d-43b8-8834-44a423e42baf" />
 
 
+
+
+ ## 🔗 相关链接 https://vector.dev/docs/reference/configuration/transforms/
