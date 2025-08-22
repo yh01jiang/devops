@@ -63,3 +63,10 @@ sinks:
       codec: "json"  # 输出格式为 JSO
 
   ```
+
+
+
+🎨 截图预览
+
+<img width="1865" height="901" alt="image" src="https://github.com/user-attachments/assets/464cc87b-640d-4a3b-aa8e-82a617e7ba97" />
+
