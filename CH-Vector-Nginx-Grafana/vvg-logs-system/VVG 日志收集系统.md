@@ -137,4 +137,7 @@ victoriametrics-logs-datasource
 
 # 参考链接：
 https://github.com/seaworld008/vvg-logs-system/tree/main?tab=readme-ov-file#%EF%B8%8F-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84
+
 https://songxwn.com/Vector-VictoriaLogs-Grafana_Syslog/
+
+https://www.opshub.cn/2025-01-09/new-generation-log-analysis-victorialogs-z1ojfik-1672.html
